@@ -31,4 +31,5 @@ gitlab_rails['ldap_servers'] = {
 };" \
         -p 1001:443 -p 1002:1002 -p 1003:22 \
         -e GITLAB_ROOT_EMAIL="xxx" -e GITLAB_ROOT_PASSWORD="xxx" \
+        --shm-size 256m \
         --name gitlab --restart unless-stopped gitlab/gitlab-ce:latest
