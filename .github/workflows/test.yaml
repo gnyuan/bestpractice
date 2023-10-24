@@ -33,6 +33,6 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "GitHub最新项目"
-          body: content.html
+          body: file://content.html
           to: 961316387@qq.com
           from: GitHub Action
