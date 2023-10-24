@@ -3,6 +3,9 @@ name: Daily GitHub New Project
 on:
   schedule:
     - cron: "0 9 * * *"
+  push:
+    branches:
+      - master
 
 jobs:
   run:
