@@ -2,7 +2,7 @@ name: Daily GitHub New Project
 
 on:
   schedule:
-    - cron: "0 9 * * *"
+    - cron: "0 0 * * *"
   push:
     branches:
       - master
@@ -33,9 +33,6 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "GitHub最新项目"
-          body: |
-            This is the latest GitHub project:
-            <br/>
-            $(cat content.html)
+          body: content.html
           to: 961316387@qq.com
           from: GitHub Action
