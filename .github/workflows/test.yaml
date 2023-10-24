@@ -34,7 +34,9 @@ jobs:
         run: python actions/github_new_project.py > content.html
       
       - name: test echo
-        run: echo content.html
+        run: cat content.html
+      - name: test2
+        run: pwd
 
       - name: Send Email
         uses: dawidd6/action-send-mail@v3
