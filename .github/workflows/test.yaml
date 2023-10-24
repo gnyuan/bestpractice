@@ -25,12 +25,6 @@ jobs:
       - name: Execute Python Script and Save Output
         run: python actions/github_new_project.py > content.html
 
-      - name: test echo1
-        run: echo ${{ secrets.MAIL_USERNAME }}
-
-      - name: test echo2
-        run: echo ${{ secrets.MAIL_PASSWORD }}
-
       - name: Send Email
         uses: dawidd6/action-send-mail@v3
         with:
@@ -42,4 +36,3 @@ jobs:
           body: ./content.html
           to: 961316387@qq.com
           from: GitHub Action
-          content_type: text/html
