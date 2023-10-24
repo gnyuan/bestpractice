@@ -31,15 +31,8 @@ jobs:
         run: pip install -r actions/requirements.txt
 
       - name: Execute Python Script and Save Output
-        run: echo "aaaabbbb" > content.html
+        run: python actions/github_new_project.py > content.html
       
-      - name: test echo
-        run: cat content.html
-      - name: test2
-        run: pwd
-      - name: test3
-        run: ls -ltrah
-
       - name: Send Email
         uses: dawidd6/action-send-mail@v3
         with:
