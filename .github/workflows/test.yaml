@@ -19,6 +19,14 @@ jobs:
         with:
           python-version: 3.x
 
+      - name: Cache Python dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('actions/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install Python Dependencies
         run: pip install -r actions/requirements.txt
 
@@ -33,6 +41,6 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "GitHub最新项目"
-          body: file://content.html
+          body: "file://content.html"
           to: 961316387@qq.com
           from: GitHub Action
