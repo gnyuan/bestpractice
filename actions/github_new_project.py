@@ -18,3 +18,5 @@ html_content = "<html><body><table><tr><th>Name</th><th>HTML URL</th><th>Descrip
 for project in content['items']:
     html_content += f"<tr><td>{project['name']}</td><td><a href='{project['html_url']}'>{project['html_url']}</a></td><td>{project['description']}</td></tr>"
 html_content += "</table></body></html>"
+
+print(html_content)
