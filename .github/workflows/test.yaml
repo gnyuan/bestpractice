@@ -37,6 +37,8 @@ jobs:
         run: cat content.html
       - name: test2
         run: pwd
+      - name: test3
+        run: ls -ltrah
 
       - name: Send Email
         uses: dawidd6/action-send-mail@v3
