@@ -8,7 +8,7 @@ one_month_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
 params = {
     'sort': 'stars',
     'order': 'desc',
-    'q': f'language:python created:>{one_month_ago} stars:>5000',
+    'q': f'language:python created:>{one_month_ago} stars:>5001',
 }
 
 response = requests.get('https://api.github.com/search/repositories', params=params)
