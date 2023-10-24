@@ -32,6 +32,9 @@ jobs:
 
       - name: Execute Python Script and Save Output
         run: python actions/github_new_project.py > content.html
+      
+      - name: test echo
+        run: echo content.html
 
       - name: Send Email
         uses: dawidd6/action-send-mail@v3
