@@ -32,5 +32,3 @@ jobs:
           subject: "GitHub最新项目"
           body: ./content.html
           to: 961316387@qq.com
-          from: GitHub Action
-          content_type: text/html
