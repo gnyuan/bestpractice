@@ -1,6 +1,15 @@
 alias ll='ls -lGah'
 alias ls='ls -G'
-export PS1="\[\e[35;1m\][Morgan:pwd=\W]$\[\e[0m\]" 
+# export PS1="\[\e[35;1m\][Morgan:pwd=\W]$\[\e[0m\]" 
+# eth0 或者ens192 中获取ip，放到PS1里，在多机器环境下知道IP后不容易出错
+show_eth0_ip() {
+    local ip=$(ifconfig eth0 | grep 'inet ' | awk '{print $2}')
+    PS1="%B%F{blue} %F{yellow}%~%F{reset} %F{green}[${ip}] %F{reset}%B%# "
+}
+show_eth0_ip
+precmd() {
+    show_eth0_ip
+}
 
 # Load the shell dotfiles, and then some:
 # * ~/.path can be used to extend `$PATH`.

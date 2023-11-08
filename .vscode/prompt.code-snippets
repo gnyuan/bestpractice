@@ -1,0 +1,74 @@
+{
+	// Place your bestpractice workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and 
+	// description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope 
+	// is left empty or omitted, the snippet gets applied to all languages. The prefix is what is 
+	// used to trigger the snippet and the body will be expanded and inserted. Possible variables are: 
+	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders. 
+	// Placeholders with the same ids are connected.
+	// Example:
+	// "Print to console": {
+	// 	"scope": "javascript,typescript",
+	// 	"prefix": "log",
+	// 	"body": [
+	// 		"console.log('$1');",
+	// 		"$2"
+	// 	],
+	// 	"description": "Log output to console"
+	// }
+	"Week Report": {
+		"prefix": "chat_week_report",
+		"body": [
+			"生成一个邮件周报，内容包括近一周的Git提交记录。请按以下步骤组织报告：",
+			"你需要推理出我的工作内容，并按类别分点归类",
+			"**周报 - [日期范围]**",
+			"*总体进展：*",
+			"1. **任务1**:",
+			"   - 详细说明任务1的进展和完成情况。",
+			"2. **任务2**:",
+			"   - 详细说明任务2的进展和完成情况。",
+			"3. **任务3**:",
+			"   - 详细说明任务3的进展和完成情况。",
+			"",
+			"*问题和挑战：*",
+			"1. **问题1**:",
+			"   - 说明遇到的问题1以及如何解决或处理。",
+			"2. **问题2**:",
+			"   - 说明遇到的问题2以及如何解决或处理。",
+			"",
+			"*下周计划：*",
+			"1. **任务1**:",
+			"   - 阐述下周计划中的任务1，以及所需的步骤和时间表。",
+			"2. **任务2**:",
+			"   - 阐述下周计划中的任务2，以及所需的步骤和时间表。",
+			"3. **任务3**:",
+			"   - 阐述下周计划中的任务3，以及所需的步骤和时间表。",
+			"",
+			"请使用近一周的Git提交记录，以帮助填写上述部分，并确保提供清晰、准确的信息。如果需要进一步的细节或特定的信息，请告知我，以便我提供更多帮助。周报应该准备好用于邮件发送。",
+			"git提交记录如下`$1`",
+			"$2"
+		],
+		"description": "生成邮件周报"
+	},
+	"Promt: learn words": {
+		"prefix": "chat_learn_english_work",
+		"body": [
+			"将英文单词转换为包括音标、中文翻译、英文释义、词根词源、助记和3个例句。中文翻译应以词性的缩写表示例如adj.作为前缀。",
+			"如果存在多个常用的中文释义，请列出最常用的3个。3个例句请给出完整中文解释。注意如果英文单词拼写有小的错误，请务必在输出的开始，加粗显示正确的拼写，并给出提示信息，这很重要。",
+			"请检查所有信息是否准确，并在回答时保持简洁，不需要任何其他反馈。第一个单词是'$1'",
+			"$2"
+		],
+		"description": "根据提交记录生成周报"
+	},
+	"Chat Product": {
+		"prefix": "chat_product",
+		"body": [
+			"担任产品经理",
+			"请确认我的以下请求。请您作为产品经理回复我。",
+			"我将会提供一个主题，您将帮助我编写一份包括以下章节标题的PRD文档：",
+			"主题、简介、问题陈述、目标与目的、用户故事、技术要求、收益、KPI指标、开发风险以及结论。",
+			"我的需求是：做一个赛博朋克的网站首页。$1",
+			"$2"
+		],
+		"description": "Insert a chat product request"
+	}
+}
