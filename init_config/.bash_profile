@@ -7,9 +7,9 @@ show_eth0_ip() {
     local git_branch=$(git branch 2>/dev/null | grep -e ^\* | cut -d ' ' -f2)
     local git_prompt=""
     if [ -n "$git_branch" ]; then
-        git_prompt="[%F{red}$git_branch%f]"
+        git_prompt="[%F{red}$git_branch%f%F{reset}]"
     fi
-    PS1="%F{green}[${ip}]%F{reset}%~${git_prompt}%F{reset}%# "
+    PS1="%B%F{green}[${ip}]%F{reset}%F{yellow}%~%F{reset}${git_prompt}%B %# "
 }
 
 show_eth0_ip
