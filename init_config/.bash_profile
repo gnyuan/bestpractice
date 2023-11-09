@@ -4,8 +4,14 @@ alias ls='ls -G'
 # eth0 或者ens192 中获取ip，放到PS1里，在多机器环境下知道IP后不容易出错
 show_eth0_ip() {
     local ip=$(ifconfig eth0 | grep 'inet ' | awk '{print $2}')
-    PS1="%B%F{blue} %F{yellow}%~%F{reset} %F{green}[${ip}] %F{reset}%B%# "
+    local git_branch=$(git branch 2>/dev/null | grep -e ^\* | cut -d ' ' -f2)
+    local git_prompt=""
+    if [ -n "$git_branch" ]; then
+        git_prompt="[%F{red}$git_branch%f]"
+    fi
+    PS1="%F{green}[${ip}]%F{reset}%~${git_prompt}%F{reset}%# "
 }
+
 show_eth0_ip
 precmd() {
     show_eth0_ip
