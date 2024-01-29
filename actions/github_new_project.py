@@ -45,9 +45,6 @@ def get_free_quota():
     html_content += "</table>"
     return html_content
 
-# Print all environment variables
-for key, value in os.environ.items():
-    print(f"{key}: {value}")
 html_content = "<html><body>" + get_github_repo_html() + get_free_quota() + \
     "</body></html>"
 print(html_content)
