@@ -31,6 +31,8 @@ jobs:
         run: pip install -r actions/requirements.txt
 
       - name: Execute Python Script and Save Output
+        env: 
+          FREE_QUOTA: ${{ secrets.FREE_QUOTA }}
         run: python actions/github_new_project.py > content.html
       
       - name: Send Email
