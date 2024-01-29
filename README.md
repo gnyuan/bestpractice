@@ -1,2 +1,2 @@
 # Best Practice
-Collecting scripts, config, shell for best practices.
+Collecting scripts, config, programs for best practices.
