@@ -27,8 +27,7 @@ def get_github_repo_html():
 
 
 def get_free_quota():
-    URL = os.environ.get("FREE_QUOTA")
-    response = requests.get(URL)
+    response = requests.get(os.environ.get("FREE_QUOTA"))
     content = json.loads(response.content)
     dt_now = dt.datetime.now()
     remain_days = -1
