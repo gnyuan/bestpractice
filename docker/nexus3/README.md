@@ -69,3 +69,21 @@ EOF
 ```
 
 ## 6 docker仓库
+```
+6.1 配置docker-proxy仓库，地址用`https://registry-1.docker.io/`，选择允许DockerHub
+6.2 创建docker-group，HTTP端口勾选并填上28443，勾选允许匿名拉以及使用V1接口与仓库交互，把刚才的docker-proxy加入到组中，保存。这里需要注意，nexus除了暴露8081，也要暴露28443端口。
+6.3 docker client端的配置。修改/etc/docker/daemon.json加入proxy地址
+`
+{"registry-mirrors":[
+"http://192.168.0.79:8081",
+"https://mirror.ccs.tencentyun.com",
+"https://hub-mirror.c.163.com"
+],
+"insecure-registries": ["10.17.0.122:31535"]
+}
+`
+6.4 重置配置及重启
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+6.5 使用  docker pull rabbitmq:latest
+```
