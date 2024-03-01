@@ -14,17 +14,91 @@ Nexus配置常见的外部仓库，用于加速CI等场景。
 
 ## 3 yum仓库
 ```
-3.1 配置仓库 http://mirrors.aliyun.com/centos/
-3.2 创建yum配置文件`/etc/yum.repos.d/myrepo.repo`其内容是
+3.1 配置yum-proxy, 仓库地址 http://mirrors.aliyun.com/centos/
+3.2 配置yum-hosted, Repodata Depth填0， Allow Redeploy.
+3.3 配置yum-epel-proxy, 仓库地址 http://mirrors.aliyun.com/epel
+3.4 配置yum-group, 把以上三个都加上
+3.5 创建yum配置文件`/etc/yum.repos.d/myrepo.repo`其内容是
 `
-[nexus]
-name=Nexus Repository
-baseurl=http://192.168.0.79:8081/repository/yum-proxy/$releasever/os/$basearch/
-enabled=1
-gpgcheck=0
+[base]
+name=CentOS-$releasever - Base - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://192.168.0.79:8081/repository/yum-group/$releasever/os/$basearch/
+        http://192.168.0.79:8081/repository/yum-group/$releasever/os/$basearch/
+        http://192.168.0.79:8081/repository/yum-group/$releasever/os/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+ 
+#released updates 
+[updates]
+name=CentOS-$releasever - Updates - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://192.168.0.79:8081/repository/yum-group/$releasever/updates/$basearch/
+        http://192.168.0.79:8081/repository/yum-group/$releasever/updates/$basearch/
+        http://192.168.0.79:8081/repository/yum-group/$releasever/updates/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+ 
+#additional packages that may be useful
+[extras]
+name=CentOS-$releasever - Extras - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://192.168.0.79:8081/repository/yum-group/$releasever/extras/$basearch/
+        http://192.168.0.79:8081/repository/yum-group/$releasever/extras/$basearch/
+        http://192.168.0.79:8081/repository/yum-group/$releasever/extras/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+ 
+#additional packages that extend functionality of existing packages
+[centosplus]
+name=CentOS-$releasever - Plus - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://192.168.0.79:8081/repository/yum-group/$releasever/centosplus/$basearch/
+        http://192.168.0.79:8081/repository/yum-group/$releasever/centosplus/$basearch/
+        http://192.168.0.79:8081/repository/yum-group/$releasever/centosplus/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+ 
+#contrib - packages by Centos Users
+[contrib]
+name=CentOS-$releasever - Contrib - mirrors.aliyun.com
+failovermethod=priority
+baseurl=http://192.168.0.79:8081/repository/yum-group/$releasever/contrib/$basearch/
+        http://192.168.0.79:8081/repository/yum-group/$releasever/contrib/$basearch/
+        http://192.168.0.79:8081/repository/yum-group/$releasever/contrib/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 `注意要覆盖原有的yum配置
-3.3 执行 `yum clean all` `yum makecache`
-3.4 后面可用命令 yum -y install python3
+3.6 创建yum配置文件`/etc/yum.repos.d/epel.repo`其内容是
+`
+[epel]
+name=Extra Packages for Enterprise Linux 7 - $basearch
+baseurl=http://192.168.0.79:8081/repository/yum-group/7/$basearch
+failovermethod=priority
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+
+[epel-debuginfo]
+name=Extra Packages for Enterprise Linux 7 - $basearch - Debug
+baseurl=http://192.168.0.79:8081/repository/yum-group/7/$basearch/debug
+failovermethod=priority
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+gpgcheck=1
+
+[epel-source]
+name=Extra Packages for Enterprise Linux 7 - $basearch - Source
+baseurl=http://192.168.0.79:8081/repository/yum-group/7/SRPMS
+failovermethod=priority
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+gpgcheck=1
+`
+3.7 执行 `yum clean all` `yum makecache`
+3.8 后面可用命令 yum -y install python3
 ```
 
 ## 4 apt仓库
