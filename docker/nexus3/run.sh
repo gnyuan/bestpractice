@@ -1,2 +1,7 @@
-export NEXUS_HOME=/Users/gnyuan/Code/store/nexus
-docker run -d -p 8081:8081 --name nexus -v $NEXUS_HOME:/nexus-data sonatype/nexus3:3.65.0
+export NEXUS_HOME=/root/nexus/nexus-data
+docker run -d -p 8081:8081 \
+  --name nexus \
+  -u 0 \
+  -v $NEXUS_HOME:/nexus-data \
+  --restart unless-stopped \
+  sonatype/nexus3:3.65.0
