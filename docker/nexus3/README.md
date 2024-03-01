@@ -75,15 +75,15 @@ EOF
 6.3 docker client端的配置。修改/etc/docker/daemon.json加入proxy地址
 `
 {"registry-mirrors":[
-"http://192.168.0.79:8081",
+"http://192.168.0.79:28443",
 "https://mirror.ccs.tencentyun.com",
 "https://hub-mirror.c.163.com"
 ],
-"insecure-registries": ["10.17.0.122:31535"]
+"insecure-registries": ["10.17.0.122:31535", "192.168.0.79:28443"]
 }
 `
 6.4 重置配置及重启
 sudo systemctl daemon-reload
 sudo systemctl restart docker
-6.5 使用  docker pull rabbitmq:latest
+6.5 使用 docker info 查看
 ```
