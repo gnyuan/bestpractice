@@ -3,13 +3,17 @@ Nexus配置常见的外部仓库，用于加速CI等场景。
 ## 1 pypi仓库
 ```
 1.1 配置仓库 https://mirrors.aliyun.com/pypi/
-1.2 后面可用命令 pip install -i http://192.168.3.27:8081/repository/proxy-pypi/simple/ --trusted-host 192.168.3.27 lxml 
+1.2 后面可用命令 pip install -i http://192.168.0.79:8081/repository/pypi-proxy/simple/ --trusted-host 192.168.0.79 lxml 
+1.3 也可以设置仓库
+    pip config --user set global.index-url http://192.168.0.79:8081/repository/pypi-proxy/simple/
+    pip config --user set global.trusted-host 192.168.0.79:8081
 ```
 
 ## 2 npm仓库
 ```
 2.1 配置仓库 https://registry.npmjs.org/
-2.2 后面可用命令 npm --registry http://192.168.3.27:8081/repository/proxy-npm/ install lodash-es vue-cli
+2.2 后面可用命令 npm --registry http://192.168.0.79:8081/repository/npm-proxy/ install lodash-es vue-cli
+2.3 可设置本地仓库 npm config set registry http://192.168.0.79:8081/repository/npm-proxy/
 ```
 
 ## 3 yum仓库
