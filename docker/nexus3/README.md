@@ -109,8 +109,12 @@ gpgcheck=1
 ```
 4.1 配置仓库，分为ubuntu或者debian。而发现版注意是bullseye或者bionic
 仓库地址填`https://mirrors.aliyun.com/debian/`  发行版服务端一般是`bullseye`
-4.2 登入进入，在目录下`/etc/apt/source.list`执行 
-`sed -i 's/deb.debian.org\/debian/192.168.0.79:8081\/repository\/apt-proxy\//g' /etc/apt/sources.list`
+4.2 配置安全仓库， 仓库地址  `https://mirrors.aliyun.com/debian-security/` 
+4.3 登入进入，在目录下`/etc/apt/source.list`执行 
+`
+sed -i 's/deb.debian.org\/debian/192.168.0.79:8081\/repository\/apt-proxy\//g' /etc/apt/sources.list
+sed -i 's|security.debian.org/debian-security|192.168.0.79:8081/repository/apt-security-proxy/|g' /etc/apt/sources.list
+`
 如果要整个文件写入，可以执行`
 cat > /etc/apt/sources.list << EOF  
 deb https://mirrors.aliyun.com/debian/ bullseye main non-free contrib  
@@ -123,9 +127,9 @@ deb https://mirrors.aliyun.com/debian/ bullseye-backports main non-free contrib
 deb-src https://mirrors.aliyun.com/debian/ bullseye-backports main non-free contrib  
 EOF
 `
-4.3 apt update
-4.4 apt install -y python3 telnet vim git
-4.5 准备了内网ubuntu的直接配置`
+4.4 apt update
+4.5 apt install -y python3 telnet vim git
+4.6 准备了内网ubuntu的直接配置`
 cat > /etc/apt/sources.list << EOF  
 deb http://192.168.0.79:8081/repository/ubuntu-proxy/ jammy main non-free contrib  
 deb-src http://192.168.0.79:8081/repository/ubuntu-proxy/ jammy main non-free contrib  
