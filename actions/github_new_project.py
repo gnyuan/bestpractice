@@ -19,7 +19,7 @@ def get_github_repo_html():
         'https://api.github.com/search/repositories', params=params)
     content = json.loads(response.content)
 
-    html_content = "<table><tr><th>Name</th><th>HTML URL</th><th>Description</th></tr>"
+    html_content = '<table  border="1" cellspacing="0"><tr><th>Name</th><th>HTML URL</th><th>Description</th></tr>'
     for project in content['items']:
         html_content += f"<tr><td>{project['name']}</td><td><a href='{project['html_url']}'>{project['html_url']}</a></td><td>{project['description']}</td></tr>"
     html_content += "</table>"
@@ -40,7 +40,7 @@ def get_free_quota():
         else:
             remain_days = (dt.datetime(year=dt_now.year, month=dt_now.month+1,
                            day=content['bw_reset_day_of_month']) - dt_now).days
-    html_content = "<table><tr><th>Limit Usage</th><th>Used</th><th>ResetDay</th><th>RemainDays</th></tr>"
+    html_content = '<table  border="1" cellspacing="0"><tr><th>Limit Usage</th><th>Used</th><th>ResetDay</th><th>RemainDays</th></tr>'
     html_content += f"<tr><td>{content['monthly_bw_limit_b']/1000000000}G</td><td>{content['bw_counter_b']//1000000000}G</td><td>{content['bw_reset_day_of_month']}</td><td>{remain_days}</td></tr>"
     html_content += "</table>"
     return html_content
