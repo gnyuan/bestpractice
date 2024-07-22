@@ -41,7 +41,7 @@ def get_free_quota():
             remain_days = (dt.datetime(year=dt_now.year, month=dt_now.month+1,
                            day=content['bw_reset_day_of_month']) - dt_now).days
     html_content = '<table  border="1" cellspacing="0"><tr><th>Limit Usage</th><th>Used</th><th>ResetDay</th><th>RemainDays</th></tr>'
-    html_content += f"<tr><td>{content['monthly_bw_limit_b']/1000000000}G</td><td>{content['bw_counter_b']//1000000000}G</td><td>{content['bw_reset_day_of_month']}</td><td>{remain_days}</td></tr>"
+    html_content += f"<tr><td>{int(content['monthly_bw_limit_b']/1000000000)}G</td><td>{content['bw_counter_b']//1000000000}G</td><td>{content['bw_reset_day_of_month']}</td><td>{remain_days}</td></tr>"
     html_content += "</table>"
     return html_content
 
