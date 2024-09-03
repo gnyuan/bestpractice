@@ -63,11 +63,27 @@ def draw2():
 
 def draw3():
     '''
-    等额本息下，当利率为4.5%时，计算不同贷款余额、剩余期数下，当期还的本金比当期还的利息高
+    计算不同利率，当期还的本金比当期还的利息高
     '''
-    t = np.arange(2.5, 6.1 , 0.1)
-    fig = px.line(x=t, y=np.log(2) / np.log(1+t/100/12), labels={'x':'利率', 'y':'当期本金大于利息的剩余期数'}
-                  , title='等额本息下，不同利率水平在剩余期数多少时，当期还的本金大于利息')
+    r = np.arange(2.9, 6.0 , 0.1)
+
+    fig = px.line()
+    fig.add_scatter(x=np.log(2) / np.log(1+r/100/12), y=r, name='等额本息', mode='lines')
+    fig.add_scatter(x=12/(r/100) - (r/100), y=r, name='等额本金', mode='lines')
+
+    fig.add_shape(type="line",
+              x0=150, x1=450,
+              y0=3.85, y1=3.85,
+              line=dict(color="RebeccaPurple", dash="dash"))
+
+    fig.update_layout(
+        title='不同利率水平在剩余期数多少时，当期还的本金大于利息',
+        xaxis_title='剩余期数',
+        yaxis_title='利率',
+        legend_title='还款方式'
+    )
+    fig.add_annotation(x=360, y=4.0, text='LPR=3.85%', showarrow=False)
+
     fig.show()
 
 
