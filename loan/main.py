@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import plotly.express as px
 
@@ -39,8 +40,8 @@ def draw1():
     data = []
     for m in range(60, 361):
         for r in [2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6]:
-            intest = BankLoan(p=2000000, r=r/100, m=m).calc_total_interest()
-            data.append({'利率': r, '剩余期数':m, '总利息': intest})
+            intrest = BankLoan(p=2000000, r=r/100, m=m).calc_total_interest()
+            data.append({'利率': r, '剩余期数':m, '总利息': intrest})
     df = pd.DataFrame(data)
     fig = px.line(df, x="剩余期数", y="总利息", color='利率', line_group="利率", hover_name="利率",
             line_shape="spline", render_mode="svg", title='等额本息下,不同利率、剩余期数下，贷款200万算得的总利息')
@@ -53,17 +54,27 @@ def draw2():
     data = []
     for m in range(60, 361):
         for p in range(1500000, 2000000+1, 100000):
-            intest = BankLoan(p=p, r=4.5/100, m=m).calc_total_interest()
-            data.append({'贷款余额': p, '剩余期数':m, '总利息': intest})
+            intrest = BankLoan(p=p, r=4.5/100, m=m).calc_total_interest()
+            data.append({'贷款余额': p, '剩余期数':m, '总利息': intrest})
     df = pd.DataFrame(data)
     fig = px.line(df, x="剩余期数", y="总利息", color='贷款余额', line_group="贷款余额", hover_name="贷款余额",
             line_shape="spline", render_mode="svg", title='等额本息下,不同贷款余额、剩余期数下，利率4.5%算得的总利息')
+    fig.show()
+
+def draw3():
+    '''
+    等额本息下，当利率为4.5%时，计算不同贷款余额、剩余期数下，当期还的本金比当期还的利息高
+    '''
+    t = np.arange(2.5, 6.1 , 0.1)
+    fig = px.line(x=t, y=np.log(2) / np.log(1+t/100/12), labels={'x':'利率', 'y':'当期本金大于利息的剩余期数'}
+                  , title='等额本息下，不同利率水平在剩余期数多少时，当期还的本金大于利息')
     fig.show()
 
 
 if __name__ == "__main__":
     # pre_payment_detail()
     # draw1()
-    draw2()
+    # draw2()
+    draw3()
 
     pass
