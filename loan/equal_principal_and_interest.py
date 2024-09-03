@@ -219,7 +219,7 @@ def get_total_interest_with_term_reduction(r, p, A, repayment_day, business_date
     if is_print_plan:
         df.to_excel('等额本息-缩期.xlsx')
     total_interest = df['当期应付利息'].sum()
-    print(f'{business_date.strftime('%Y/%m/%d')}日去提前还款{prepayment:.0f}选择缩短期限 ,则原总利息{total_interest_origin:.0f},操作后总利息{total_interest:.0f}, 节省了{total_interest_origin-total_interest:.0f}')
+    print(f'等额本息，{business_date.strftime('%Y/%m/%d')}日去提前还款{prepayment:.0f}选择缩短期限 ,则原总利息{total_interest_origin:.0f},操作后总利息{total_interest:.0f}, 节省了{total_interest_origin-total_interest:.0f}')
     return total_interest
 
 
@@ -296,7 +296,7 @@ def get_total_interest_with_lower_monthly_installments(r, p, A, repayment_day, b
     if is_print_plan:
         df.to_excel('等额本息-减月供.xlsx')
     total_interest = df['当期应付利息'].sum()
-    print(f'{business_date.strftime('%Y/%m/%d')}日去提前还款{prepayment:.0f}选择降月供 ,则原总利息{total_interest_origin:.0f},操作后总利息{total_interest:.0f}, 节省了{total_interest_origin-total_interest:.0f}')
+    print(f'等额本息，{business_date.strftime('%Y/%m/%d')}日去提前还款{prepayment:.0f}选择降月供 ,则原总利息{total_interest_origin:.0f},操作后总利息{total_interest:.0f}, 节省了{total_interest_origin-total_interest:.0f}')
     return total_interest
 
 
