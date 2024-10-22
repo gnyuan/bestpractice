@@ -15,23 +15,23 @@ def pre_payment_detail():
     
     # m = 12*n 贷款期数
     # b = r/12 每期利率
-    p = 1840482.84
-    r = 4.41/100
+    p = 1078720.84
+    r = 3.95/100
 
     # #  办理提前还款业务
-    prepayment = 300000
-    business_date='2024/09/06'
+    prepayment = 100
+    business_date='2024/11/1'
 
     #################### 等额本息 #################################################
-    A = 10879.33  #  每月还款额
-    get_total_interest_with_term_reduction(r=r, p=p, A=A, repayment_day=20, business_date=business_date, prepayment=prepayment, is_print_plan=True)
-    get_total_interest_with_lower_monthly_installments(r=r, p=p, A=A, repayment_day=20, business_date=business_date, prepayment=prepayment, is_print_plan=True)
+    A = 6807.64  #  每月还款额
+    get_total_interest_with_term_reduction(r=r, p=p, A=A, repayment_day=9, business_date=business_date, prepayment=prepayment, is_print_plan=True)
+    get_total_interest_with_lower_monthly_installments(r=r, p=p, A=A, repayment_day=9, business_date=business_date, prepayment=prepayment, is_print_plan=True)
     
 
-    #################### 等额本息 #################################################
-    KP = 10879.33 #  每月还本金额
-    get_total_interest_with_term_reduction_equal_principal(r=r, p=p, KP=KP, repayment_day=20, business_date=business_date, prepayment=prepayment, is_print_plan=True)
-    get_total_interest_with_lower_monthly_installments_equal_principal(r=r, p=p, KP=KP, repayment_day=20, business_date=business_date, prepayment=prepayment, is_print_plan=True)
+    #################### 等额本金 #################################################
+    # KP = 10879.33 #  每月还本金额
+    # get_total_interest_with_term_reduction_equal_principal(r=r, p=p, KP=KP, repayment_day=9, business_date=business_date, prepayment=prepayment, is_print_plan=True)
+    # get_total_interest_with_lower_monthly_installments_equal_principal(r=r, p=p, KP=KP, repayment_day=9, business_date=business_date, prepayment=prepayment, is_print_plan=True)
 
 def draw1():
     '''
@@ -54,11 +54,11 @@ def draw2():
     data = []
     for m in range(60, 361):
         for p in range(1500000, 2000000+1, 100000):
-            intrest = BankLoan(p=p, r=4.5/100, m=m).calc_total_interest()
+            intrest = BankLoan(p=p, r=3.6/100, m=m).calc_total_interest()
             data.append({'贷款余额': p, '剩余期数':m, '总利息': intrest})
     df = pd.DataFrame(data)
     fig = px.line(df, x="剩余期数", y="总利息", color='贷款余额', line_group="贷款余额", hover_name="贷款余额",
-            line_shape="spline", render_mode="svg", title='等额本息下,不同贷款余额、剩余期数下，利率4.5%算得的总利息')
+            line_shape="spline", render_mode="svg", title='等额本息下,不同贷款余额、剩余期数下，利率3.6%算得的总利息')
     fig.show()
 
 def draw3():
@@ -86,11 +86,34 @@ def draw3():
 
     fig.show()
 
+def draw4():
+    '''
+    横坐标为利率，纵坐标为每期利息
+    '''
+    data = []
+    for r in [1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]:
+        intrest = 1000000 * (r * 0.01) / 12
+        data.append({'利率': r, '每期利息': intrest})
+    df = pd.DataFrame(data)
+    fig = px.line(df, x="利率", y="每期利息",
+            line_shape="spline", render_mode="svg", title='贷款100万，不同利率下每期所还利息')
+    fig.add_annotation(x=3.3, y=3300, text='LPR=3.6%', showarrow=False)
+    fig.add_shape(type="line",
+              x0=1.5, x1=5,
+              y0=3000, y1=3000,
+              line=dict(color="RebeccaPurple", dash="dash"))
+
+    fig.show()
 
 if __name__ == "__main__":
     # pre_payment_detail()
+
     # draw1()
     # draw2()
-    draw3()
+    # draw3()
+    # a = BankLoan(p=1078720.84, m=269, A=6807)
+    # print(a.calc_r())
+
+    draw2()
 
     pass
