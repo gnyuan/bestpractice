@@ -95,7 +95,7 @@ class DailyBacktestEngine:
             indicator_df['nv'] = indicator_df['close'] - indicator_df['pre_close']
         else:  # price
             indicator_df['nv'] = indicator_df['close'] - indicator_df['pre_close']
-        indicator_df['nv'].fillna(0, inplace=True)
+        indicator_df.fillna({'nv': 0}, inplace=True)
         ## 特殊处理 如果切券了，则当天nv为0
         indicator_df['nv'] = np.where(indicator_df['name'] != indicator_df['pre_name'], 0,
                                       indicator_df['nv'])
@@ -152,25 +152,6 @@ class DailyBacktestEngine:
             subfig.show()
             fig_file_title = f'backtest-{self.strategy}-{dt.datetime.now().strftime("%Y%m%d-%H%M%S")}.html'
             subfig.write_html(fig_file_title)
-            content = open(fig_file_title, 'rb').read()
-            with open(fig_file_title, 'wb') as fp:
-                content = content.decode('GB2312').replace(r'<head><meta charset="utf-8" /></head>',
-                                                           r'<head><meta charset="GB2312" /></head>')
-                fp.write(content.encode('GB2312'))
-        # if is_save:
-        #     indicator_df['strategy'] = self.strategy
-        #     indicator_df['d_timestamp'] = dt.datetime.now()
-        #     indicator_df['trade_dt'] = indicator_df['v_date'].dt.strftime('%Y%m%d')
-        #     try:
-        #         sql_stat = f'''
-        #         delete from xbond_test.model_result
-        #         where strategy='{self.strategy}'
-        #         '''
-        #         engine_vnpy.execute(sql_stat)
-        #     except:
-        #         pass
-        #     indicator_df[['strategy', 'trade_dt', 'spread_name', 'spread_price', 'spread_nv', 'signal2','nv','d_timestamp']].to_sql(
-        #         name='model_result', con=engine_vnpy, schema='xbond_test', if_exists='append', index=False)
         return {'md': md, 'r': r, 'cr': cr, 'sr': sr, 'calmar': calmar}
 
     def find_best_param(self, signal_func, strategy_params={}, signal_params={}):
