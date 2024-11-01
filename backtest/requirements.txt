@@ -4,10 +4,10 @@ pandas
 numpy
 matplotlib
 requests
-# xloil
-# pywin32==306
-xlwings
-
-
+xloil
+pywin32==306
+plotly
+scipy
+sqlalchemy
 
 
