@@ -104,7 +104,7 @@ class DailyBacktestEngine:
 
         # 自己计算所有绩效，都是每日挣取的bp数，或者多少元
         indicator_df['daily_return'] = indicator_df['nv'] / indicator_df['pre_close']  # 日收益率
-        from .empyrical.stats import max_drawdown, annual_return
+        from ..empyrical.stats import max_drawdown, annual_return
         
         # 净值
         indicator_df['net_value'] = (1 + indicator_df['daily_return']).cumprod(axis=0)
