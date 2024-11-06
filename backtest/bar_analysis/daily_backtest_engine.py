@@ -90,6 +90,8 @@ class DailyBacktestEngine:
         indicator_df['nv'] = 0.0
         indicator_df['pre_close'] = indicator_df['close'].shift(1)
         indicator_df = indicator_df.iloc[1:]  #去掉第一条
+        indicator_df.drop(columns='level_0', inplace=True)
+        indicator_df = indicator_df.reset_index()
         if self.close_type == 'ytm':
             indicator_df['nv'] = indicator_df['pre_close'] - indicator_df['close']
         elif self.close_type == 'spread':
@@ -104,7 +106,7 @@ class DailyBacktestEngine:
 
         # 自己计算所有绩效，都是每日挣取的bp数，或者多少元
         indicator_df['daily_return'] = indicator_df['nv'] / indicator_df['pre_close']  # 日收益率
-        from empyrical.stats import max_drawdown, annual_return
+        from empyrical.stats import max_drawdown, annual_return, sharpe_ratio
         
         # 净值
         indicator_df['net_value'] = (1 + indicator_df['daily_return']).cumprod(axis=0)
@@ -113,6 +115,7 @@ class DailyBacktestEngine:
 
         md = round(max_drawdown(indicator_df['daily_return'])*100, 2)  # 最大回撤
         r = round(annual_return(indicator_df['daily_return'])*100, 2)  # 年化收益
+        sh = round(sharpe_ratio(indicator_df['daily_return']), 2)  # 夏普比
 
         if is_plot:
             traces = tuple()
@@ -130,7 +133,7 @@ class DailyBacktestEngine:
             traces[-1].yaxis = 'y3'
 
             subfig = get_chart_fig(traces=traces,
-                                   title=f'最大回撤{md:.2f}%，年化{r:.2f}% 策略参数' + str(self.signal_param) + str(
+                                   title=f'最大回撤{md:.2f}%，年化{r:.2f}%，夏普{sh:.2f}.  策略参数:' + str(self.signal_param) + str(
                                        self.strategy_param),
                                    xtitle='日期', ytitle='资产价格', y2title='因子值', y3title='累计收益', for_capture=False)
             # 信号标记
@@ -148,7 +151,7 @@ class DailyBacktestEngine:
             subfig.show()
             fig_file_title = f'backtest-{self.strategy}-{dt.datetime.now().strftime("%Y%m%d-%H%M%S")}.html'
             subfig.write_html(fig_file_title)
-        return {'md': md, 'r': r}
+        return {'md': md, 'r': r, 'sh': sh}
 
     def find_best_param(self, signal_func, strategy_params={}, signal_params={}):
         params = strategy_params
