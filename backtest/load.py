@@ -381,9 +381,6 @@ def save_daily_edb():
     while i < len(data) and data[i][0] is not None:
         i += 1
     data = data[:i]
-    if _is_fetching(data.flatten().tolist()):
-        MsgBox(f'指标还未完全计算完毕！')
-        return
     data_df = pd.DataFrame(data[1:], columns=data[0])
     data_df['indicator_date'] = data_df['indicator_date'].apply(lambda x: xlo.from_excel_date(x).strftime('%Y%m%d'))
     melted_df = data_df.melt(id_vars='indicator_date', var_name='indicator_id', value_name='indicator_value')
@@ -397,8 +394,9 @@ def save_daily_edb():
     execute_sql(f'''delete from edb_data where indicator_date in ( {date_str} ) ''')
 
     # 4 组织数据并插入DB
-    data_df = melted_df[['id','indicator_date','indicator_value']].rename(columns={'id':'desc_id', 'indicator_value':'value'}).to_sql('edb_data', conn, if_exists='append', index=False)
+    data_df = melted_df[['id','indicator_date','indicator_value']].rename(columns={'id':'desc_id', 'indicator_value':'value'})
     data_df = data_df.dropna(subset=['value'])
+    data_df.to_sql('edb_data', conn, if_exists='append', index=False)
     
     # 5 更新数据最新日期
     for desc_id in list(data_df['desc_id'].unique()):
