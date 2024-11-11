@@ -60,7 +60,7 @@ class DailyBacktestEngine:
         df['signal'] = signal_func(df[self.factor_col], signal_param)
         self.df = df.copy()
 
-    def simple_strategy(self, strategy_param, is_plot=False, is_save=False):
+    def simple_strategy(self, strategy_param, is_plot=False):
         assert 'v_date' in self.df.columns
         assert 'close' in self.df.columns
         assert 'factor' in self.df.columns
@@ -89,34 +89,37 @@ class DailyBacktestEngine:
 
         indicator_df['nv'] = 0.0
         indicator_df['pre_close'] = indicator_df['close'].shift(1)
+        indicator_df = indicator_df.iloc[1:]  #去掉第一条
+        indicator_df.drop(columns='level_0', inplace=True)
+        indicator_df = indicator_df.reset_index()
         if self.close_type == 'ytm':
             indicator_df['nv'] = indicator_df['pre_close'] - indicator_df['close']
         elif self.close_type == 'spread':
             indicator_df['nv'] = indicator_df['close'] - indicator_df['pre_close']
         else:  # price
             indicator_df['nv'] = indicator_df['close'] - indicator_df['pre_close']
+<<<<<<< HEAD
         indicator_df.fillna({'nv': 0}, inplace=True)
+=======
+        indicator_df['nv'] = indicator_df['nv'].fillna(0)
+>>>>>>> 356a7cdc439fe3eb025657ebbdd479cfd38594e1
         ## 特殊处理 如果切券了，则当天nv为0
         indicator_df['nv'] = np.where(indicator_df['name'] != indicator_df['pre_name'], 0,
                                       indicator_df['nv'])
-        indicator_df['spread_nv'] = indicator_df['nv'].copy()  # 底层资产本身的日盈亏
         indicator_df['nv'] = indicator_df['nv'] * indicator_df['signal2']
 
         # 自己计算所有绩效，都是每日挣取的bp数，或者多少元
-        indicator_df['balance'] = indicator_df['nv'].cumsum()  # 每日争取的资金或bp数累计
-        indicator_df["highlevel"] = (
-            indicator_df["balance"].rolling(
-                min_periods=1, window=len(indicator_df), center=False).max()
-        )
-        indicator_df["drawdown"] = indicator_df["balance"] - indicator_df["highlevel"]
+        indicator_df['daily_return'] = indicator_df['nv'] / indicator_df['pre_close']  # 日收益率
+        from empyrical.stats import max_drawdown, annual_return, sharpe_ratio
+        
+        # 净值
+        indicator_df['net_value'] = (1 + indicator_df['daily_return']).cumprod(axis=0)
+        # 最大回撤
+        indicator_df['max_drawdown'] = indicator_df['daily_return'].expanding(1).apply(max_drawdown)
 
-        md = round(indicator_df["drawdown"].min(), 2)  # 最大回撤
-        r = round(indicator_df['balance'].iloc[-1] / len(indicator_df) * 255, 2)  # 年化收益
-        cr = round(indicator_df['balance'].iloc[-1], 2)  # 累计收益
-        sr = round(indicator_df['nv'].mean() / indicator_df['nv'].std() * np.sqrt(255), 2)
-
-        indicator_df["ddpercent"] = indicator_df["drawdown"] / indicator_df["highlevel"] * 100
-        calmar = round(cr / md, 2) * -1
+        md = round(max_drawdown(indicator_df['daily_return'])*100, 2)  # 最大回撤
+        r = round(annual_return(indicator_df['daily_return'])*100, 2)  # 年化收益
+        sh = round(sharpe_ratio(indicator_df['daily_return']), 2)  # 夏普比
 
         if is_plot:
             traces = tuple()
@@ -129,14 +132,14 @@ class DailyBacktestEngine:
             traces += px.line(x=indicator_df['v_date'], y=indicator_df['factor']).data
             traces[-1].name = '因子值'
             traces[-1].yaxis = 'y2'
-            traces += px.line(x=indicator_df['v_date'], y=indicator_df['balance']).data
+            traces += px.line(x=indicator_df['v_date'], y=indicator_df['net_value']).data
             traces[-1].name = '累计净值'
             traces[-1].yaxis = 'y3'
 
             subfig = get_chart_fig(traces=traces,
-                                   title=f'回测,夏普{sr:.2f},最大回撤{md:.2f}，年化{r:.2f} 策略参数' + str(self.signal_param) + str(
+                                   title=f'最大回撤{md:.2f}%，年化{r:.2f}%，夏普{sh:.2f}.  策略参数:' + str(self.signal_param) + str(
                                        self.strategy_param),
-                                   xtitle='日期', ytitle='资产价格', y2title='因子值', y3title='累计收益', for_capture=True)
+                                   xtitle='日期', ytitle='资产价格', y2title='因子值', y3title='累计收益', for_capture=False)
             # 信号标记
             for i, row in indicator_df.iterrows():
                 if i == len(indicator_df) - 1:
@@ -152,7 +155,11 @@ class DailyBacktestEngine:
             subfig.show()
             fig_file_title = f'backtest-{self.strategy}-{dt.datetime.now().strftime("%Y%m%d-%H%M%S")}.html'
             subfig.write_html(fig_file_title)
+<<<<<<< HEAD
         return {'md': md, 'r': r, 'cr': cr, 'sr': sr, 'calmar': calmar}
+=======
+        return {'md': md, 'r': r, 'sh': sh}
+>>>>>>> 356a7cdc439fe3eb025657ebbdd479cfd38594e1
 
     def find_best_param(self, signal_func, strategy_params={}, signal_params={}):
         params = strategy_params
