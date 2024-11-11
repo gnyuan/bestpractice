@@ -98,11 +98,7 @@ class DailyBacktestEngine:
             indicator_df['nv'] = indicator_df['close'] - indicator_df['pre_close']
         else:  # price
             indicator_df['nv'] = indicator_df['close'] - indicator_df['pre_close']
-<<<<<<< HEAD
-        indicator_df.fillna({'nv': 0}, inplace=True)
-=======
         indicator_df['nv'] = indicator_df['nv'].fillna(0)
->>>>>>> 356a7cdc439fe3eb025657ebbdd479cfd38594e1
         ## 特殊处理 如果切券了，则当天nv为0
         indicator_df['nv'] = np.where(indicator_df['name'] != indicator_df['pre_name'], 0,
                                       indicator_df['nv'])
@@ -155,11 +151,7 @@ class DailyBacktestEngine:
             subfig.show()
             fig_file_title = f'backtest-{self.strategy}-{dt.datetime.now().strftime("%Y%m%d-%H%M%S")}.html'
             subfig.write_html(fig_file_title)
-<<<<<<< HEAD
-        return {'md': md, 'r': r, 'cr': cr, 'sr': sr, 'calmar': calmar}
-=======
         return {'md': md, 'r': r, 'sh': sh}
->>>>>>> 356a7cdc439fe3eb025657ebbdd479cfd38594e1
 
     def find_best_param(self, signal_func, strategy_params={}, signal_params={}):
         params = strategy_params
