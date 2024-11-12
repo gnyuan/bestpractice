@@ -249,7 +249,7 @@ def fetch_one_edb():
     '''
     ws = xlo.active_worksheet()
     ws.range(0, 0, 5000, 2).clear()
-    names = ws.range(0, 8, 50, 8).value
+    names = ws.range(0, 8, 500, 8).value
     indicator_name = ''  # 在I列的指标名
     indicator_row = -1  # I列的行index
     for i, name in enumerate(names):
@@ -286,7 +286,7 @@ def save_one_edb():
     配合fetch_one_edb()使用，抓到后，全量更新至数据库
     '''
     ws = xlo.active_worksheet()
-    names = ws.range(0, 8, 50, 8).value
+    names = ws.range(0, 8, 500, 8).value
     indicator_name = ''  # 在I列的指标名
     indicator_row = -1  # I列的行index
     for i, name in enumerate(names):
@@ -404,6 +404,6 @@ def save_daily_edb():
         execute_sql(f'''update edb_desc set last_updated_date='{np.max(sub_df["indicator_date"])}' where id={sub_df["desc_id"].iloc[-1]}''')
     # 清理Excel
     ws.used_range.clear()
-    
+
 
 create_table()
