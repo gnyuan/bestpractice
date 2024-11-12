@@ -324,8 +324,6 @@ where indicator_name in ( '{indicator_name}' )
     data_df['desc_id'] = indicator_foreign_id
     data_df = data_df[data_df['value']!=0]  # TODO 把值为0的去掉，或许这个对某些指标来说不严谨。
     data_df['indicator_date'] = data_df['indicator_date'].apply(lambda x: xlo.from_excel_date(x).strftime('%Y%m%d'))
-    # MsgBox(str(data_df))
-    # return
     # 删DB数据
     execute_sql(f'delete from edb_data where desc_id={data_df["desc_id"].iloc[0]}')
     # 插入数据
@@ -407,34 +405,33 @@ def save_daily_edb():
     ws.used_range.clear()
 
 
-def get_data(indicators: List):
+def get_data(indicators: List, start_date: str):
     conn = sqlite3.connect(SQLITE_FILE_PAHT)
     indicators_str = ",".join([f"'{i}'" for i in indicators if i])
     sql_stat = f'''
-select b.name, a.value, a.indicator_date
+select b.name, a.value, a.indicator_date "日期"
 from indicator_data a
 join indicator_description b on a.indicator_id =b.id
  and b.name in ( {indicators_str} )
- -- and a.indicator_date >'20241101'
+ and a.indicator_date >'{start_date}'
 
  union all
 
 select b.indicator_name, a.value, a.indicator_date
 from edb_data a
 join edb_desc b on a.desc_id =b.id
- -- and a.indicator_date  >'20241101'
+ and a.indicator_date  >'{start_date}'
  and b.indicator_name in ( {indicators_str} )
 '''
     df = pd.read_sql(sql_stat, conn)
-    pivot_df = df.pivot(index='indicator_date', columns='name', values='value')
+    pivot_df = df.pivot(index='日期', columns='name', values='value')
     pivot_df.index = pd.to_datetime(pivot_df.index.astype(str), format='%Y%m%d')
-    MsgBox(str(pivot_df))
     return pivot_df
 
 
 @xlo.func
-def test(arr) -> PDFrame(headings=True, index=True):
-    df = get_data(arr.flatten().tolist())
+def iData(arr, start_date="20050101") -> PDFrame(headings=True, index=True):
+    df = get_data(arr.flatten().tolist(), start_date)
     return df
 
 create_table()
