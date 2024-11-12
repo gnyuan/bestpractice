@@ -3,8 +3,9 @@ import pandas as pd
 import numpy as np
 import time
 import datetime as dt
-import asyncio
 import win32api, win32con
+from typing import List
+from xloil.pandas import PDFrame
 
 import sqlite3
 SQLITE_FILE_PAHT = r'D:\onedrive\文档\etc\ifind.db'
@@ -405,5 +406,35 @@ def save_daily_edb():
     # 清理Excel
     ws.used_range.clear()
 
+
+def get_data(indicators: List):
+    conn = sqlite3.connect(SQLITE_FILE_PAHT)
+    indicators_str = ",".join([f"'{i}'" for i in indicators if i])
+    sql_stat = f'''
+select b.name, a.value, a.indicator_date
+from indicator_data a
+join indicator_description b on a.indicator_id =b.id
+ and b.name in ( {indicators_str} )
+ -- and a.indicator_date >'20241101'
+
+ union all
+
+select b.indicator_name, a.value, a.indicator_date
+from edb_data a
+join edb_desc b on a.desc_id =b.id
+ -- and a.indicator_date  >'20241101'
+ and b.indicator_name in ( {indicators_str} )
+'''
+    df = pd.read_sql(sql_stat, conn)
+    pivot_df = df.pivot(index='indicator_date', columns='name', values='value')
+    pivot_df.index = pd.to_datetime(pivot_df.index.astype(str), format='%Y%m%d')
+    MsgBox(str(pivot_df))
+    return pivot_df
+
+
+@xlo.func
+def test(arr) -> PDFrame(headings=True, index=True):
+    df = get_data(arr.flatten().tolist())
+    return df
 
 create_table()
