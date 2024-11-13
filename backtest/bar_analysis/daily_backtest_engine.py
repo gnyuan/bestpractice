@@ -164,7 +164,9 @@ class DailyBacktestEngine:
             self.set_signal(signal_func, signal_param=param)
             ret = self.simple_strategy(strategy_param=param, is_plot=False)
             ret = {**ret, **param}
-            ret_df = ret_df.append(pd.Series(ret), ignore_index=True)
+            series_to_append = pd.Series(ret)
+            # 使用concat沿着轴0（行方向）进行拼接
+            ret_df = pd.concat([ret_df, series_to_append.to_frame().T], ignore_index=True)
         ret_df.sort_values(by='sr', ascending=False, inplace=True)
         return ret_df
 
