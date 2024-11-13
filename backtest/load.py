@@ -242,7 +242,6 @@ def save_increment():
     ws.range(0, 0, 5000, 4).clear()
 
 
-
 @xlo.func(command=True)
 def fetch_one_edb():
     '''
@@ -434,4 +433,13 @@ def iData(arr, start_date="20050101") -> PDFrame(headings=True, index=True):
     df = get_data(arr.flatten().tolist(), start_date)
     return df
 
-create_table()
+
+@xlo.func
+def iReturn(arr, start_date="20050101") -> PDFrame(headings=True, index=True):
+    df_data = get_data(arr.flatten().tolist(), start_date)
+    df_return = (df_data.pct_change() + 1).cumprod() - 1
+    return df_return
+
+
+# if __name__ == '__main__':
+#     create_table()
