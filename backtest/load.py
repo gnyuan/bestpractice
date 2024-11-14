@@ -8,7 +8,8 @@ from typing import List
 from xloil.pandas import PDFrame
 
 import sqlite3
-SQLITE_FILE_PAHT = r'D:\onedrive\文档\etc\ifind.db'
+SQLITE_FILE_PATH = r'D:\onedrive\文档\etc\ifind.db'
+
 
 def print_status(*args):
     with xlo.StatusBar(2000) as status:
@@ -27,7 +28,7 @@ def MsgBox(content: str = "", title: str = "知心提示") -> int:
 
 
 def execute_sql(sql_stat):
-    conn = sqlite3.connect(SQLITE_FILE_PAHT)
+    conn = sqlite3.connect(SQLITE_FILE_PATH)
     cursor = conn.cursor()
     cursor.execute(sql_stat)
     conn.commit()
@@ -86,6 +87,29 @@ CREATE TABLE IF NOT EXISTS edb_data (
     FOREIGN KEY (desc_id) REFERENCES edb_desc (id)
 );
     ''')
+    execute_sql('''
+CREATE TABLE IF NOT EXISTS wind_desc (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    indicator_name TEXT NOT NULL,
+    explanation TEXT,
+    script_type TEXT,
+    sql_stat TEXT,
+    remark TEXT,
+    last_updated_date DATE,
+    update_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+    ''')
+    execute_sql('''
+CREATE TABLE IF NOT EXISTS wind_data (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    indicator_id INTEGER NOT NULL,
+    indicator_date DATE,
+    value REAL NOT NULL,
+    disclosure_date DATE,
+    update_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (indicator_id) REFERENCES wind_desc (id)
+);
+    ''')
 
 
 @xlo.func(command=True)
@@ -108,7 +132,7 @@ def fetch_one():
     if indicator_row == -1:
         MsgBox('I列没有加入指标，请加指标')
         return
-    conn = sqlite3.connect(SQLITE_FILE_PAHT)
+    conn = sqlite3.connect(SQLITE_FILE_PATH)
     # 1 取得所有指标及其公式
     indicator_df = pd.read_sql(f'''
 select a.id, b.date, a.name, a.formula from indicator_description a
@@ -160,7 +184,7 @@ def save_one():
     data_df = pd.DataFrame(data, columns=['indicator_date','value', 'indicator_id'])
     data_df = data_df[data_df['value']!=0]  # TODO 把值为0的去掉，或许这个对某些指标来说不严谨。
     data_df['indicator_date'] = data_df['indicator_date'].apply(lambda x: xlo.from_excel_date(x).strftime('%Y%m%d'))
-    conn = sqlite3.connect(SQLITE_FILE_PAHT)
+    conn = sqlite3.connect(SQLITE_FILE_PATH)
     # 删DB数据
     execute_sql(f'delete from indicator_data where indicator_id={data_df["indicator_id"].iloc[0]}')
     # 插入数据
@@ -180,7 +204,7 @@ def fetch_increment():
     '''
     ws = xlo.active_worksheet()
     ws.range(0, 0, 5000, 4).clear()
-    conn = sqlite3.connect(SQLITE_FILE_PAHT)
+    conn = sqlite3.connect(SQLITE_FILE_PATH)
     
     # 1 取得所有指标及其公式
     indicator_df = pd.read_sql(f'''
@@ -231,7 +255,7 @@ def save_increment():
     data_df = pd.DataFrame(data, columns=['indicator_date','value', 'indicator_id', 'pre_value','name'])
     data_df = data_df[(data_df['value']!=data_df['pre_value']) & (data_df['value']!=0.0)].reset_index()
     data_df['indicator_date'] = data_df['indicator_date'].apply(lambda x: xlo.from_excel_date(x).strftime('%Y%m%d'))
-    conn = sqlite3.connect(SQLITE_FILE_PAHT)
+    conn = sqlite3.connect(SQLITE_FILE_PATH)
     # 插入数据
     data_df[['indicator_date','value','indicator_id']].to_sql('indicator_data', conn, if_exists='append', index=False)
     # 更新数据最新日期
@@ -262,7 +286,7 @@ def fetch_one_edb():
     if indicator_row == -1:
         MsgBox('I列没有加入指标，请加指标')
         return
-    conn = sqlite3.connect(SQLITE_FILE_PAHT)
+    conn = sqlite3.connect(SQLITE_FILE_PATH)
     # 1 取得所有指标及其公式
     indicator_df = pd.read_sql(f'''
 select id, indicator_name, indicator_id, last_updated_date from edb_desc
@@ -299,7 +323,7 @@ def save_one_edb():
     if indicator_row == -1:
         print_status('I列没有加入指标，请加指标')
         return
-    conn = sqlite3.connect(SQLITE_FILE_PAHT)
+    conn = sqlite3.connect(SQLITE_FILE_PATH)
     indicator_df = pd.read_sql(f'''
 select id, indicator_name, indicator_id, last_updated_date from edb_desc
 where indicator_name in ( '{indicator_name}' )
@@ -341,7 +365,7 @@ def fetch_daily_edb():
     '''
     ws = xlo.active_worksheet()
     ws.range(0, 0, 5000, 500).clear()
-    conn = sqlite3.connect(SQLITE_FILE_PAHT)
+    conn = sqlite3.connect(SQLITE_FILE_PATH)
     
     # 1 取得日频数据中最小日期的下一天
     min_date = pd.read_sql(''' 
@@ -384,7 +408,7 @@ def save_daily_edb():
     melted_df = data_df.melt(id_vars='indicator_date', var_name='indicator_id', value_name='indicator_value')
     
     # 2 得到具体id
-    conn = sqlite3.connect(SQLITE_FILE_PAHT)
+    conn = sqlite3.connect(SQLITE_FILE_PATH)
     desc_df = pd.read_sql('select id, indicator_id from edb_desc', conn)
     melted_df = melted_df.merge(desc_df, on='indicator_id', how='left')
     # 3 删除原有的
@@ -405,7 +429,7 @@ def save_daily_edb():
 
 
 def get_data(indicators: List, start_date: str):
-    conn = sqlite3.connect(SQLITE_FILE_PAHT)
+    conn = sqlite3.connect(SQLITE_FILE_PATH)
     indicators_str = ",".join([f"'{i}'" for i in indicators if i])
     sql_stat = f'''
 select b.name, a.value, a.indicator_date "日期"
@@ -421,6 +445,15 @@ from edb_data a
 join edb_desc b on a.desc_id =b.id
  and a.indicator_date  >'{start_date}'
  and b.indicator_name in ( {indicators_str} )
+
+ union all
+  
+  select b.indicator_name, a.value, a.indicator_date  
+ from wind_data a
+ join wind_desc b on a.indicator_id=b.id
+ and a.indicator_date  >'{start_date}'
+ and b.indicator_name in ( {indicators_str} )
+
 '''
     df = pd.read_sql(sql_stat, conn)
     pivot_df = df.pivot(index='日期', columns='name', values='value')
