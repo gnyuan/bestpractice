@@ -1,7 +1,7 @@
 import xloil as xlo
 import pandas as pd
 import numpy as np
-import time
+import plotly.express as px
 import datetime as dt
 import win32api, win32con
 from typing import List
@@ -458,6 +458,7 @@ join edb_desc b on a.desc_id =b.id
     df = pd.read_sql(sql_stat, conn)
     pivot_df = df.pivot(index='日期', columns='name', values='value')
     pivot_df.index = pd.to_datetime(pivot_df.index.astype(str), format='%Y%m%d')
+    pivot_df = pivot_df.dropna()
     return pivot_df
 
 
@@ -470,8 +471,37 @@ def iData(arr, start_date="20050101") -> PDFrame(headings=True, index=True):
 @xlo.func
 def iReturn(arr, start_date="20050101") -> PDFrame(headings=True, index=True):
     df_data = get_data(arr.flatten().tolist(), start_date)
-    df_return = (df_data.pct_change() + 1).cumprod() - 1
+    df_return = ((df_data.pct_change() + 1).cumprod() - 1) * 100
     return df_return
+
+
+@xlo.func
+def iPlot(y_indicators, y2_indicators, start_date="20050101", convert2return=False, title=""):
+    y_indicators = y_indicators.flatten().tolist()
+    y2_indicators = y2_indicators.flatten().tolist()
+    df_data = get_data(y_indicators + y2_indicators, start_date)
+    if convert2return:
+        df_data = ((df_data.pct_change() + 1).cumprod() - 1) * 100
+    df_data.rename(columns={x: f'{x}(右)' for x in y2_indicators}, inplace=True)
+    y2_indicators = [f'{x}(右)' for x in y2_indicators]
+    fig = px.line(df_data, x=df_data.index, y=y_indicators)
+    
+    # 设置第二个 Y 轴
+    fig.update_layout(
+        title=title,
+        yaxis2=dict(
+            title='',
+            overlaying='y',
+            side='right'
+        )
+    )
+    
+    # 添加第二个 Y 轴的数据
+    for col in y2_indicators:
+        fig.add_scatter(x=df_data.index, y=df_data[col], mode='lines', name=col, yaxis='y2')
+
+    fig.show()
+    return '查看'
 
 
 # if __name__ == '__main__':
