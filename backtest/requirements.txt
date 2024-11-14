@@ -1,5 +1,4 @@
 # pip install -i https://mirrors.aliyun.com/pypi/simple/ -r requirements.txt
-sqlalchemy
 pandas
 numpy
 matplotlib
@@ -8,6 +7,7 @@ xloil
 pywin32==306
 plotly
 scipy
-sqlalchemy
 bottleneck 
+SQLAlchemy==2.0.20
+cx_Oracle==8.3.0
 
