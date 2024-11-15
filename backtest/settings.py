@@ -39,12 +39,30 @@ def execute_sql(sql_stat):
     conn.commit()
 
 def get_wind_data(indicator_list:List):
-    indicator_str = ",".join([f"'{x}'" for x in indicator_list])
+    indicators_str = ",".join([f"'{x}'" for x in indicator_list])
+    start_date = '20050101'
     sql_stat = f'''
-        select b.name indicatorname, a.value n_value, a.indicator_date || '' v_date from indicator_data a
-join indicator_description b on b.name in ( {indicator_str} )
- and a.indicator_id =b.id and a.indicator_date >'20100101'
-order by a.indicator_date
+select b.name indicatorname, a.value n_value, a.indicator_date || '' v_date
+from indicator_data a
+join indicator_description b on a.indicator_id =b.id
+ and b.name in ( {indicators_str} )
+ and a.indicator_date >'{start_date}'
+
+ union all
+
+select b.indicator_name, a.value, a.indicator_date || ''
+from edb_data a
+join edb_desc b on a.desc_id =b.id
+ and a.indicator_date  >'{start_date}'
+ and b.indicator_name in ( {indicators_str} )
+
+ union all
+  
+  select b.indicator_name, a.value, a.indicator_date || ''  
+ from wind_data a
+ join wind_desc b on a.indicator_id=b.id
+ and a.indicator_date  >'{start_date}'
+ and b.indicator_name in ( {indicators_str} )
     '''
     df = pd.read_sql(sql_stat, con=ENGINE)
     df = pd.pivot_table(df, index='v_date', columns='indicatorname', values='n_value')

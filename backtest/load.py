@@ -477,8 +477,8 @@ def iReturn(arr, start_date="20050101") -> PDFrame(headings=True, index=True):
 
 @xlo.func
 def iPlot(y_indicators, y2_indicators, start_date="20050101", convert2return=False, title=""):
-    y_indicators = y_indicators.flatten().tolist()
-    y2_indicators = y2_indicators.flatten().tolist()
+    y_indicators = [x for x in y_indicators.flatten().tolist() if x]
+    y2_indicators = [x for x in y2_indicators.flatten().tolist() if x]
     df_data = get_data(y_indicators + y2_indicators, start_date)
     if convert2return:
         df_data = ((df_data.pct_change() + 1).cumprod() - 1) * 100
