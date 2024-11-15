@@ -39,7 +39,7 @@ def test_stock_bond_ratio():  # 股债性价比回测
 
 def test_strong_stock_ratio():  # 强势股回测
 
-    df = get_wind_data(indicator_list=['上证综指收盘价', '月强势股占比'])
+    df = get_wind_data(indicator_list=['上证综指收盘价', '年强势股占比'])
 
     def signal_func(factor_series: pd.Series, param: Dict):
         threshold = param.get('threshold')
@@ -48,16 +48,16 @@ def test_strong_stock_ratio():  # 强势股回测
         return signal_series
 
     df['close'] = df['上证综指收盘价']
-    df = df[['close', '月强势股占比']].dropna()
-    bt = DailyBacktestEngine(df=df, close_col='close', factor_col='月强势股占比', name_col=None)
+    df = df[['close', '年强势股占比']].dropna()
+    bt = DailyBacktestEngine(df=df, close_col='close', factor_col='年强势股占比', name_col=None)
     # best_param = bt.find_best_param(signal_func
     #                                 , strategy_params={
     #         'start_date': ['20180101', '20190101', '20200101', '20210101']
-    #         , 'holding_days': [3, 4, 5]}
-    #                                 , signal_params={'threshold': [0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.2, 0.25, 0.3, 0.35]})
+    #         , 'holding_days': [10, 15, 20, 25, 30]}
+    #                                 , signal_params={'threshold': [0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18]})
     # print(best_param.iloc[:5])
     bt.set_signal(signal_func, signal_param={'threshold': 0.11})
-    ret = bt.simple_strategy(strategy_param={'holding_days': 5, 'start_date': '20200101'}, is_plot=True)
+    ret = bt.simple_strategy(strategy_param={'holding_days': 30, 'start_date': '20190101'}, is_plot=True)
     print(ret)
 
 if __name__ == '__main__':
