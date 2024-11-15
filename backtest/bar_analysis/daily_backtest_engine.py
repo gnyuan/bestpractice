@@ -115,7 +115,7 @@ class DailyBacktestEngine:
 
         md = round(max_drawdown(indicator_df['daily_return'])*100, 2)  # 最大回撤
         r = round(annual_return(indicator_df['daily_return'])*100, 2)  # 年化收益
-        sh = round(sharpe_ratio(indicator_df['daily_return']), 2)  # 夏普比
+        sr = round(sharpe_ratio(indicator_df['daily_return']), 2)  # 夏普比
 
         if is_plot:
             traces = tuple()
@@ -133,7 +133,7 @@ class DailyBacktestEngine:
             traces[-1].yaxis = 'y3'
 
             subfig = get_chart_fig(traces=traces,
-                                   title=f'最大回撤{md:.2f}%，年化{r:.2f}%，夏普{sh:.2f}.  策略参数:' + str(self.signal_param) + str(
+                                   title=f'最大回撤{md:.2f}%，年化{r:.2f}%，夏普{sr:.2f}.  策略参数:' + str(self.signal_param) + str(
                                        self.strategy_param),
                                    xtitle='日期', ytitle='资产价格', y2title='因子值', y3title='累计收益', for_capture=False)
             # 信号标记
@@ -151,7 +151,7 @@ class DailyBacktestEngine:
             subfig.show()
             fig_file_title = f'backtest-{self.strategy}-{dt.datetime.now().strftime("%Y%m%d-%H%M%S")}.html'
             subfig.write_html(fig_file_title)
-        return {'md': md, 'r': r, 'sh': sh}
+        return {'md': md, 'r': r, 'sr': sr}
 
     def find_best_param(self, signal_func, strategy_params={}, signal_params={}):
         params = strategy_params
