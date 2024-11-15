@@ -1,3 +1,4 @@
+import re
 import xloil as xlo
 import pandas as pd
 import numpy as np
@@ -430,7 +431,7 @@ def save_daily_edb():
 
 def get_data(indicators: List, start_date: str):
     conn = sqlite3.connect(SQLITE_FILE_PATH)
-    indicators_str = ",".join([f"'{i}'" for i in indicators if i])
+    indicators_str = ",".join(["'" + re.sub(r'^(?:MA|EMA)\d+-', '', i) + "'"  for i in indicators if i])
     sql_stat = f'''
 select b.name, a.value, a.indicator_date "日期"
 from indicator_data a
@@ -458,6 +459,17 @@ join edb_desc b on a.desc_id =b.id
     df = pd.read_sql(sql_stat, conn)
     pivot_df = df.pivot(index='日期', columns='name', values='value')
     pivot_df.index = pd.to_datetime(pivot_df.index.astype(str), format='%Y%m%d')
+    for column in indicators:
+        if str(column).startswith('MA'):
+            window = int(re.search(r'MA(\d+)-', column).group(1))
+            data_column = re.sub(r'^(?:MA|EMA)\d+-', '', column)
+            pivot_df[column] = pivot_df[data_column].rolling(window=window, min_periods=1).mean()
+        elif str(column).startswith('EMA'):
+            window = int(re.search(r'EMA(\d+)-', column).group(1))
+            data_column = re.sub(r'^(?:MA|EMA)\d+-', '', column)
+            pivot_df[column] = pivot_df[data_column].ewm(span = window).mean()
+        else:
+            pass
     pivot_df = pivot_df.dropna()
     return pivot_df
 
