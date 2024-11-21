@@ -7,6 +7,7 @@ import datetime as dt
 import win32api, win32con
 from typing import List
 from xloil.pandas import PDFrame
+import ast
 
 import sqlite3
 SQLITE_FILE_PATH = r'D:\onedrive\文档\etc\ifind.db'
@@ -429,9 +430,9 @@ def save_daily_edb():
     ws.used_range.clear()
 
 
-def get_data(indicators: List, start_date: str):
+def get_data_from_db(indicators: List, start_date: str):
     conn = sqlite3.connect(SQLITE_FILE_PATH)
-    indicators_str = ",".join(["'" + re.sub(r'^(?:MA|EMA)\d+-', '', i) + "'"  for i in indicators if i])
+    indicators_str = ",".join([f"'{i}'" for i in indicators if i])
     sql_stat = f'''
 select b.name, a.value, a.indicator_date "日期"
 from indicator_data a
@@ -459,19 +460,190 @@ join edb_desc b on a.desc_id =b.id
     df = pd.read_sql(sql_stat, conn)
     pivot_df = df.pivot(index='日期', columns='name', values='value')
     pivot_df.index = pd.to_datetime(pivot_df.index.astype(str), format='%Y%m%d')
-    for column in indicators:
-        if str(column).startswith('MA'):
-            window = int(re.search(r'MA(\d+)-', column).group(1))
-            data_column = re.sub(r'^(?:MA|EMA)\d+-', '', column)
-            pivot_df[column] = pivot_df[data_column].rolling(window=window, min_periods=1).mean()
-        elif str(column).startswith('EMA'):
-            window = int(re.search(r'EMA(\d+)-', column).group(1))
-            data_column = re.sub(r'^(?:MA|EMA)\d+-', '', column)
-            pivot_df[column] = pivot_df[data_column].ewm(span = window).mean()
-        else:
-            pass
     pivot_df = pivot_df.dropna()
     return pivot_df
+
+def extract_variables(expr: str):
+    """
+    从表达式中提取所有变量名 支持变量含有冒号 不支持变量含有减号、下划线！！
+
+    :param expr: 表达式字符串，例如 "ma40(ma20(col1) - ema30(col2) - col3:2) + ema10(col1:2)"
+    :return: 包含所有变量名的集合
+    """
+    expr = expr.replace(':','_')
+    variables = set()
+    functions = set()
+
+    class CustomVisitor(ast.NodeVisitor):
+        def visit_Call(self, node):
+            # 记录函数名
+            if isinstance(node.func, ast.Name):
+                functions.add(node.func.id)
+            self.generic_visit(node)  # 继续递归
+
+        def visit_Name(self, node):
+            # 记录变量名
+            if node.id not in functions:  # 排除函数名
+                variables.add(node.id)
+
+        def visit_Subscript(self, node):
+            # 支持类似 col1:2 的变量名
+            if isinstance(node.value, ast.Name) and node.value.id not in functions:
+                variables.add(node.value.id)
+            self.generic_visit(node)
+
+    try:
+        parsed_ast = ast.parse(expr, mode='eval')
+        visitor = CustomVisitor()
+        visitor.visit(parsed_ast)
+    except SyntaxError:
+        raise ValueError(f"无法解析表达式: {expr}")
+
+    return [v.replace('_', ':') for v in variables]
+
+
+# 所有序列函数的实现
+def ema(series: pd.Series, window: int) -> pd.Series:
+    return series.ewm(span=window, adjust=False).mean()
+
+def ma(series: pd.Series, window: int) -> pd.Series:
+    return series.rolling(window=window).mean()
+
+def pr(series: pd.Series, window: int) -> pd.Series:
+    """Calculate the percentile rank of the most recent value in the rolling window."""
+    return series.rolling(window=window).apply(
+        lambda x: (x.argsort().argsort()[-1] + 1) / len(x) * 100, raw=True
+    )
+
+def p(series: pd.Series, percentile: int) -> pd.Series: # p70 表示所有数据中P70的点位，水平线来的
+    value = series.quantile(percentile / 100.0)
+    return pd.Series(value, index=series.index)
+
+def macd(series: pd.Series, short_window: int, long_window: int, signal_window: int) -> pd.DataFrame: # # MACD (指数平滑异同移动平均线)
+    short_ema = series.ewm(span=short_window, adjust=False).mean()
+    long_ema = series.ewm(span=long_window, adjust=False).mean()
+    macd_line = short_ema - long_ema
+    signal_line = macd_line.ewm(span=signal_window, adjust=False).mean()
+    histogram = macd_line - signal_line
+    return pd.DataFrame({'MACD': macd_line, 'Signal': signal_line, 'Histogram': histogram})
+
+
+def rsi(series: pd.Series, n: int) -> pd.Series: # RSI (相对强弱指数)
+    delta = series.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=n).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=n).mean()
+    rs = gain / loss
+    return 100 - (100 / (1 + rs))
+
+
+def bollinger_bands(series: pd.Series, n: int, num_std: float) -> pd.DataFrame:  # Bollinger Bands (布林带)
+    sma = series.rolling(window=n).mean()
+    std = series.rolling(window=n).std()
+    upper_band = sma + num_std * std
+    lower_band = sma - num_std * std
+    return pd.DataFrame({'SMA': sma, 'Upper Band': upper_band, 'Lower Band': lower_band})
+
+# 处理字段名，去掉特殊字符并映射到新字段
+def normalize_column_names(df: pd.DataFrame, expr: str) -> (pd.DataFrame, dict, str):
+    special_char_pattern = r"[:]"  # 指标的特殊字符只支持冒号 不支持减号
+    column_map = {}
+    # 匹配表达式中的所有变量名
+    for var in re.findall(r"[a-zA-Z_][a-zA-Z0-9_:.]*", expr):
+        if re.search(special_char_pattern, var):
+            normalized = re.sub(special_char_pattern, "_", var)
+            column_map[var] = normalized
+            df[normalized] = df[var]  # 为 DataFrame 添加新列
+    # 替换表达式中的字段名
+    for original, normalized in column_map.items():
+        expr = re.sub(rf"\b{re.escape(original)}\b", normalized, expr)
+    return df, column_map, expr
+
+def calc_complicate_indicator(df: pd.DataFrame, expr: str) -> pd.DataFrame:
+    # 处理字段名特殊字符
+    df, column_map, expr = normalize_column_names(df, expr)
+
+    # 解析 AST
+    parsed_ast = ast.parse(expr, mode='eval')
+    
+    # 提取函数和变量
+    class FunctionAndVariableVisitor(ast.NodeVisitor):
+        def __init__(self):
+            self.functions = set()
+            self.variables = set()
+
+        def visit_Call(self, node):
+            if isinstance(node.func, ast.Name):
+                self.functions.add(node.func.id)
+            self.generic_visit(node)
+
+        def visit_Name(self, node):
+            if node.id not in self.functions:
+                self.variables.add(node.id)
+
+    visitor = FunctionAndVariableVisitor()
+    visitor.visit(parsed_ast)
+
+    functions = sorted(visitor.functions)
+    variables = sorted(visitor.variables)
+
+    # 动态生成函数并存储
+    my_functions = {}
+    for func in functions:
+        if re.match(r"^ema(\d+)$", func): # 例如 ema20 
+            window = int(re.match(r"^ema(\d+)$", func).group(1))
+            my_functions[func] = lambda series, window=window: ema(series, window)
+        elif re.match(r"^ma(\d+)$", func): # 例如 ma30 
+            window = int(re.match(r"^ma(\d+)$", func).group(1))
+            my_functions[func] = lambda series, window=window: ma(series, window)
+        elif re.match(r"^pr(\d+)$", func): # 例如 pr70 
+            window = int(re.match(r"^pr(\d+)$", func).group(1))
+            my_functions[func] = lambda series, window=window: pr(series, window)
+        elif re.match(r"^p(\d+)$", func): # 例如 p70 
+            percentile = int(re.match(r"^p(\d+)$", func).group(1))
+            my_functions[func] = lambda series, percentile=percentile: p(series, percentile)
+        elif re.match(r"^macd(\d+)_(\d+)_(\d+)$", func):  # 例如 macd12_26_9
+            params = list(map(int, re.match(r"^macd(\d+)_(\d+)_(\d+)$", func).groups()))
+            my_functions[func] = lambda series, params=params: macd(series, *params)
+        elif re.match(r"^rsi(\d+)$", func):  # 例如 rsi14
+            window = int(re.match(r"^rsi(\d+)$", func).group(1))
+            my_functions[func] = lambda series, window=window: rsi(series, window)
+        elif re.match(r"^bollinger(\d+)_(\d+)$", func):  # 例如 bollinger20_2
+            params = list(map(int, re.match(r"^bollinger(\d+)_(\d+)$", func).groups()))
+            my_functions[func] = lambda series, params=params: bollinger_bands(series, *params)
+
+    # 构造 pd.eval 环境
+    eval_env = {"df": df}
+    eval_env.update(my_functions)
+
+    # 构造新表达式，变量加上 df. 前缀
+    for var in variables:
+        expr = re.sub(rf"\b{var}\b", f"df.{var}", expr)
+
+    # 计算表达式并添加到 DataFrame
+    res = pd.eval(expr, local_dict=eval_env)
+    if type(res)==pd.Series:
+        df[expr.replace('df.', '')] = res
+    elif type(res)==pd.DataFrame:
+        df = pd.concat([df, res], axis=1)
+    return df
+
+
+def get_data(indicators: List, start_date: str='20200101'):
+    origin_indicators = [indi for indi in indicators if indi] # 用户看到的带冒号的指标名  不支持 减号 下划线
+    expr_indicators = [indi.replace(':', '_') for indi in indicators if indi]  # 支持 eval的指标名
+    indicators_set = set() # 支持eval的单个指标名
+    for indi in expr_indicators:
+        if '(' in indi or '-' in indi or '+' in indi: # 若是需要表达式解析的
+            indicators_set.update(extract_variables(indi))
+        else:
+            indicators_set.add(indi)
+    df = get_data_from_db([indi.replace('_', ':') for indi in list(indicators_set)], start_date) # 从数据库得到所有指标
+    df.columns = [c.replace(':', '_') for c in df.columns]
+    for indi in expr_indicators:
+        if '(' in indi or '-' in indi or '+' in indi: # 若是需要表达式解析的
+            df = calc_complicate_indicator(df, indi)
+    df.columns = [c.replace('_', ':') for c in df.columns]
+    return df[origin_indicators]
 
 
 @xlo.func
@@ -494,6 +666,7 @@ def iPlot(y_indicators, y2_indicators, start_date="20050101", convert2return=Fal
     df_data = get_data(y_indicators + y2_indicators, start_date)
     if convert2return:
         df_data = ((df_data.pct_change() + 1).cumprod() - 1) * 100
+        df_data.fillna(0.0, inplace=True)
     df_data.rename(columns={x: f'{x}(右)' for x in y2_indicators}, inplace=True)
     y2_indicators = [f'{x}(右)' for x in y2_indicators]
     fig = px.line(df_data, x=df_data.index, y=y_indicators)
