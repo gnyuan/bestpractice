@@ -670,6 +670,10 @@ def iPlot(y_indicators, y2_indicators, start_date="20050101", convert2return=Fal
     df_data.rename(columns={x: f'{x}(右)' for x in y2_indicators}, inplace=True)
     y2_indicators = [f'{x}(右)' for x in y2_indicators]
     fig = px.line(df_data, x=df_data.index, y=y_indicators)
+
+    for trace in fig.data: # 设置y1如果是分位水平线，则要改成虚线
+        if trace.name in y_indicators:
+            trace.line.dash = 'dash' if re.match(r'^p\d+', trace.name) else 'solid'
     
     # 设置第二个 Y 轴
     fig.update_layout(
@@ -683,7 +687,11 @@ def iPlot(y_indicators, y2_indicators, start_date="20050101", convert2return=Fal
     
     # 添加第二个 Y 轴的数据
     for col in y2_indicators:
-        fig.add_scatter(x=df_data.index, y=df_data[col], mode='lines', name=col, yaxis='y2')
+        line_dash = 'dash' if re.match(r'^p\d+', col) else 'solid' # 如果是p30之类的，则画虚线
+        fig.add_scatter(x=df_data.index, y=df_data[col], mode='lines', name=col, yaxis='y2', line=dict(dash=line_dash))
+
+    # legend中太长的描述要换行
+    fig.for_each_trace(lambda trace: trace.update(name='<br>'.join([trace.name[i:i+18] for i in range(0, len(trace.name), 18)])))
 
     fig.show()
     return '查看'
