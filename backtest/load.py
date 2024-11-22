@@ -509,6 +509,11 @@ def ema(series: pd.Series, window: int) -> pd.Series:
 def ma(series: pd.Series, window: int) -> pd.Series:
     return series.rolling(window=window).mean()
 
+def zscore(series: pd.Series, window: int) -> pd.Series:
+    rolling_mean = series.rolling(window=window).mean()
+    rolling_std = series.rolling(window=window).std()
+    return (series - rolling_mean) / rolling_std
+
 def pr(series: pd.Series, window: int) -> pd.Series:
     """Calculate the percentile rank of the most recent value in the rolling window."""
     return series.rolling(window=window).apply(
@@ -595,6 +600,9 @@ def calc_complicate_indicator(df: pd.DataFrame, expr: str) -> pd.DataFrame:
         elif re.match(r"^ma(\d+)$", func): # 例如 ma30 
             window = int(re.match(r"^ma(\d+)$", func).group(1))
             my_functions[func] = lambda series, window=window: ma(series, window)
+        elif re.match(r"^zscore(\d+)$", func): # 例如 zscore30 
+            window = int(re.match(r"^zscore(\d+)$", func).group(1))
+            my_functions[func] = lambda series, window=window: zscore(series, window)
         elif re.match(r"^pr(\d+)$", func): # 例如 pr70 
             window = int(re.match(r"^pr(\d+)$", func).group(1))
             my_functions[func] = lambda series, window=window: pr(series, window)
