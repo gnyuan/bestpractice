@@ -106,7 +106,10 @@ order by s_info_windcode, trade_dt
     df['ma60'] = df.groupby('s_info_windcode')['s_dq_adjclose'].rolling(window=60).mean().reset_index(level=0, drop=True)
     df['ma100'] = df.groupby('s_info_windcode')['s_dq_adjclose'].rolling(window=100).mean().reset_index(level=0, drop=True)
     df['ma240'] = df.groupby('s_info_windcode')['s_dq_adjclose'].rolling(window=240).mean().reset_index(level=0, drop=True)
+    df['historical_max'] = df.groupby('s_info_windcode')['s_dq_adjclose'].cummax()  # 添加一列，记录每个股票的历史最高价
+    df['is_new_high'] = df['s_dq_adjclose'] == df['historical_max']  # 判断是否创了新高
     df = df.dropna()
+
     def _calculate(group):
         total_count = len(group)
         # 月强势股占比：当前股价高于MA20的股票的占比
@@ -125,7 +128,16 @@ order by s_info_windcode, trade_dt
         count_greater_4 = (group['s_dq_adjclose'] > group['ma240']).sum()
         ratio4 = count_greater_4 / total_count if total_count > 0 else 0
 
-        return pd.Series({'月强势股占比': ratio, '季强势股占比': ratio2, '半年强势股占比': ratio3, '年强势股占比': ratio4})
+        # 创新高个股占比：当前股价为历史最高价的股票的占比
+        ratio_new_high = group['is_new_high'].sum() / total_count if total_count > 0 else 0
+
+        return pd.Series({
+        '月强势股占比': ratio,
+        '季强势股占比': ratio2,
+        '半年强势股占比': ratio3,
+        '年强势股占比': ratio4,
+        '创新高个股占比': ratio_new_high
+    })
     # 2 计算衍生指标
     result_df = df.groupby('trade_dt').apply(_calculate).reset_index()
     melted_df = result_df.melt(id_vars='trade_dt', var_name='indicator_name', value_name='value')
