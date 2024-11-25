@@ -729,9 +729,6 @@ def iPlot(y_indicators, y2_indicators, start_date="20050101", convert2return=Fal
         if trace.name in y_indicators:
             trace.line.dash = 'dash' if re.match(r'^p\d+', trace.name) else 'solid'
     
-    # 获取y1的悬浮框模板（如果y1的悬浮框设置了模板）
-    hovertemplate_y1 = fig.data[0].hovertemplate
-
     # 设置第二个 Y 轴
     fig.update_layout(
         title=title,
@@ -745,7 +742,7 @@ def iPlot(y_indicators, y2_indicators, start_date="20050101", convert2return=Fal
     # 添加第二个 Y 轴的数据
     for col in y2_indicators:
         line_dash = 'dash' if re.match(r'^p\d+', col) else 'solid' # 如果是p30之类的，则画虚线
-        fig.add_scatter(x=df_data.index, y=df_data[col], mode='lines', name=col, yaxis='y2', line=dict(dash=line_dash), hovertemplate=hovertemplate_y1)
+        fig.add_scatter(x=df_data.index, y=df_data[col], mode='lines', name=col, yaxis='y2', line=dict(dash=line_dash), hovertemplate='variable='+col+'<br>日期=%{x}<br>value=%{y}<extra></extra>')
 
     # legend中太长的描述要换行
     fig.for_each_trace(lambda trace: trace.update(name='<br>'.join([trace.name[i:i+18] for i in range(0, len(trace.name), 18)])))
