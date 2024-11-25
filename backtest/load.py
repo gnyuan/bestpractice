@@ -504,19 +504,19 @@ def extract_variables(expr: str):
 
 # 所有序列函数的实现
 def ema(series: pd.Series, window: int) -> pd.Series:
-    return series.ewm(span=window, adjust=False).mean()
+    return series.ewm(span=window, adjust=False, min_periods=window).mean()
 
 def ma(series: pd.Series, window: int) -> pd.Series:
-    return series.rolling(window=window).mean()
+    return series.rolling(window=window, min_periods=window).mean()
 
 def zscore(series: pd.Series, window: int) -> pd.Series:
-    rolling_mean = series.rolling(window=window).mean()
-    rolling_std = series.rolling(window=window).std()
+    rolling_mean = series.rolling(window=window, min_periods=window).mean()
+    rolling_std = series.rolling(window=window, min_periods=window).std()
     return (series - rolling_mean) / rolling_std
 
 def pr(series: pd.Series, window: int) -> pd.Series:
     """Calculate the percentile rank of the most recent value in the rolling window."""
-    return series.rolling(window=window).apply(
+    return series.rolling(window=window, min_periods=window).apply(
         lambda x: (x.argsort().argsort()[-1] + 1) / len(x) * 100, raw=True
     )
 
@@ -525,25 +525,25 @@ def p(series: pd.Series, percentile: int) -> pd.Series: # p70 表示所有数据
     return pd.Series(value, index=series.index)
 
 def macd(series: pd.Series, short_window: int, long_window: int, signal_window: int) -> pd.DataFrame: # # MACD (指数平滑异同移动平均线)
-    short_ema = series.ewm(span=short_window, adjust=False).mean()
-    long_ema = series.ewm(span=long_window, adjust=False).mean()
+    short_ema = series.ewm(span=short_window, adjust=False, min_periods=short_window).mean()
+    long_ema = series.ewm(span=long_window, adjust=False, min_periods=long_window).mean()
     macd_line = short_ema - long_ema
-    signal_line = macd_line.ewm(span=signal_window, adjust=False).mean()
+    signal_line = macd_line.ewm(span=signal_window, adjust=False, min_periods=signal_window).mean()
     histogram = macd_line - signal_line
     return pd.DataFrame({'MACD': macd_line, 'Signal': signal_line, 'Histogram': histogram})
 
 
 def rsi(series: pd.Series, n: int) -> pd.Series: # RSI (相对强弱指数)
     delta = series.diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=n).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=n).mean()
+    gain = (delta.where(delta > 0, 0)).rolling(window=n, min_periods=n).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=n, min_periods=n).mean()
     rs = gain / loss
     return 100 - (100 / (1 + rs))
 
 
 def bollinger_bands(series: pd.Series, n: int, num_std: float) -> pd.DataFrame:  # Bollinger Bands (布林带)
-    sma = series.rolling(window=n).mean()
-    std = series.rolling(window=n).std()
+    sma = series.rolling(window=n, min_periods=n).mean()
+    std = series.rolling(window=n, min_periods=n).std()
     upper_band = sma + num_std * std
     lower_band = sma - num_std * std
     return pd.DataFrame({'SMA': sma, 'Upper Band': upper_band, 'Lower Band': lower_band})
