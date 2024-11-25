@@ -13,10 +13,10 @@ from bar_analysis.daily_backtest_engine import DailyBacktestEngine
 
 def test_stock_bond_ratio():  # 股债性价比回测
 
-    df = get_wind_data(indicator_list=['沪深300PE-TTM', '中债国债到期收益率10y'
+    df = get_wind_data(indicator_list=['沪深300PE:TTM', '中债国债到期收益率10y'
         , '沪深300收盘价'])
 
-    df['股债性价比'] = 1 / df['沪深300PE-TTM'] * 100 - df['中债国债到期收益率10y']
+    df['股债性价比'] = 1 / df['沪深300PE:TTM'] * 100 - df['中债国债到期收益率10y']
 
     def signal_func(factor_series: pd.Series, param: Dict):
         threshold = param.get('threshold')
@@ -61,5 +61,5 @@ def test_strong_stock_ratio():  # 强势股回测
     print(ret)
 
 if __name__ == '__main__':
-    # test_stock_bond_ratio()  # 股债性价比回测
+    test_stock_bond_ratio()  # 股债性价比回测
     test_strong_stock_ratio()
