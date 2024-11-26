@@ -10,3 +10,5 @@ scipy
 bottleneck 
 SQLAlchemy==2.0.20
 cx_Oracle==8.3.0
+statsmodels==0.14.4
+
