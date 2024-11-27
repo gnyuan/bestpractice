@@ -827,6 +827,7 @@ def iPlot(y_indicators, y2_indicators, start_date="20050101", convert2return=Fal
     fig.for_each_trace(lambda trace: trace.update(name='<br>'.join(
         [trace.name[i:i+18] for i in range(0, len(trace.name), 18)])))
 
+    fig.update_layout(title_x=0.5)  # 将标题居中
     fig.show()
     return '折线图'
 
@@ -841,6 +842,7 @@ def iMatrix(indicators: List[str], start_date="20050101") -> PDFrame(headings=Tr
                     text_auto=True,
                     color_continuous_scale='RdYlGn',
                     title=f'相关性矩阵，起始日{start_date}')  # 使用Plotly生成热力图
+    fig.update_layout(title_x=0.5)  # 将标题居中
 
     fig.show()
     return '相关性矩阵'
@@ -881,6 +883,7 @@ def iCoint(indicators: List[str], start_date="20050101") -> PDFrame(headings=Tru
                     text_auto=True,
                     color_continuous_scale='RdYlGn',  # 使用绿黄红渐变色
                     title=f'Cointegration Test p-value Matrix 起始日{start_date}')
+    fig.update_layout(title_x=0.5)  # 将标题居中
     fig.show()
     return '协整性测试'
 
@@ -928,6 +931,7 @@ def iAlphaBeta(assets: str, benchmark: str, start_date: str = "20050101") -> Tup
                 line_shape='linear').data[0]
     )
     fig.data[-1].line.color = 'red'  # 设置回归线的颜色为红色
+    fig.update_layout(title_x=0.5)  # 将标题居中
 
     fig.show()
 
