@@ -1,13 +1,43 @@
 '''
 通过AD配置以及AD用户名密码得到AD的所有配置
+
+服务端测试可采用：
+docker run -d --name openldap \
+  -e LDAP_ORGANISATION="xxfund.com" \
+  -e LDAP_DOMAIN="xxfund.com" \
+  -e LDAP_ADMIN_PASSWORD="admin123" \
+  -p 389:389 \
+  osixia/openldap:stable
+
+ldapwhoami -x -D "cn=admin,dc=xxfund,dc=com" -w admin123
+
+########  如果需要密文密码
+# 得到peter/peter123的加密后密码
+slappasswd
+# 输入peter123 得到{SSHA}xxxxxxxxxx 把它贴入下面
+###########
+
+echo -e "dn: uid=peter,dc=xxfund,dc=com\nobjectClass: inetOrgPerson\nuid: peter\nsn: Peter\ngivenName: Peter\ncn: Peter\nuserPassword: peter123\ndisplayName: Peter" > peter.ldif
+
+ldapadd -x -D "cn=admin,dc=xxfund,dc=com" -w admin123 -f peter.ldif
+
+ldapsearch -x -D "cn=admin,dc=xxfund,dc=com" -w admin123 -b "dc=xxfund,dc=com" "(uid=peter)"
+
 '''
 from ldap3 import Server, Connection, ALL
 
-base_dn = 'DC=company,DC=com'  # 根节点
-manager_dn = r'company\myaccount'  # 管理员的 DN（根据你的实际 DN 修改）
-manager_password = 'mypwd'  # 管理员密码
-user_to_query = 'theaccount'
-ldap_server = 'ldap://192.168.0.61:389'  # 修改为你的 LDAP 服务器地址
+# base_dn = 'DC=company,DC=com'  # 根节点
+# manager_dn = r'company\myaccount'  # 管理员的 DN（根据你的实际 DN 修改）
+# manager_password = 'mypwd'  # 管理员密码
+# user_to_query = 'theaccount'
+# ldap_server = 'ldap://192.168.0.61:389'  # 修改为你的 LDAP 服务器地址
+
+base_dn = 'DC=xxfund,DC=com'  # 根节点
+manager_dn = r'cn=admin,dc=xxfund,dc=com'  # 管理员的 DN（根据你的实际 DN 修改）
+manager_password = 'admin123'  # 管理员密码
+user_to_query = 'peter'
+ldap_server = 'ldap://10.18.12.113:389'  # 修改为你的 LDAP 服务器地址
+
 
 use_tls = False  # 是否启用 TLS（你可以根据需求更改）
 # 如果需要启用 TLS，请配置以下选项
@@ -22,7 +52,8 @@ conn = Connection(server, user=manager_dn, password=manager_password, auto_bind=
 
 
 # 查询所有对象，模拟 Django 的 `LDAP_AUTH_SEARCH_BASE`
-conn.search(base_dn, f'(sAMAccountName={user_to_query})', attributes=['*'])  # 查询所有对象类
+# conn.search(base_dn, f'(sAMAccountName={user_to_query})', attributes=['*'])  # 查询所有对象类
+conn.search(base_dn, f'(uid={user_to_query})', attributes=['*'])  # 查询所有对象类
 
 if conn.entries:
     for entry in conn.entries:
