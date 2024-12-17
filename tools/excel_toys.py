@@ -4,6 +4,7 @@ Excel里一些玩具函数
 import asyncio
 import datetime as dt
 import numpy as np
+import cv2
 
 import xloil as xlo
 
@@ -80,3 +81,53 @@ async def zNow():
     while True:
         yield dt.datetime.now()
         await asyncio.sleep(0.0001)
+
+
+@xlo.func
+def ascii_art():
+    input=r'd:\down.jpg'
+    char_list='ABCDEFGHIJKLMNOPQRSTVUWXYZ'
+    num_cols=300
+
+    char_list = list(char_list)
+    scale = 2    
+
+    num_chars = len(char_list)
+    image = cv2.imread(input)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    height, width = image.shape
+    cell_width = width / num_cols
+    cell_height = scale * cell_width
+    num_rows = int(height / cell_height)
+
+    if num_cols > width or num_rows > height:
+        print("Too many columns or rows. Use default setting")
+        cell_width = 6
+        cell_height = 12
+        num_cols = int(width / cell_width)
+        num_rows = int(height / cell_height)
+
+    ascii_output = ""
+
+    for i in range(num_rows):
+        line = "".join([char_list[min(int(np.mean(image[int(i * cell_height):min(int((i + 1) * cell_height), height),
+                                                  int(j * cell_width):min(int((j + 1) * cell_width),
+                                                                          width)]) / 255 * num_chars), num_chars - 1)]
+                        for j in range(num_cols)]) + "\n"
+        ascii_output += line  # Add the line to the output string
+
+    # Save the ASCII output to numpy
+    ascii_array = np.full((num_rows, num_cols), '', dtype='<U1')  # Create an empty array to store characters
+    
+    for i in range(num_rows):
+        for j in range(num_cols):
+            # Extract the region of the image and calculate the average brightness
+            cell_region = image[int(i * cell_height):min(int((i + 1) * cell_height), height),
+                                int(j * cell_width):min(int((j + 1) * cell_width), width)]
+            avg_brightness = np.mean(cell_region)  # Calculate average brightness of the region
+            
+            # Map the brightness to a character
+            char_index = int(avg_brightness / 255 * len(char_list))  # Convert brightness to an index
+            ascii_array[i, j] = char_list[min(char_index, len(char_list) - 1)]  # Store the character
+    return ascii_array
+
