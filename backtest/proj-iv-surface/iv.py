@@ -42,7 +42,7 @@ def MsgBox(content: str = "", title: str = "知心提示") -> int:
 
 
 @xlo.func
-def iv(arr: List):
+def iv(arr: List, is_plot=False):
     import plotly.graph_objects as go
     import pandas as pd
 
@@ -73,7 +73,8 @@ def iv(arr: List):
             )
         )
     )
-
+    if is_plot:
+        fig.write_html(f"D:\\iv_surface.html")
     fig.show()
     return "隐含波动率图"
 
