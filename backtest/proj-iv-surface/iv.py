@@ -13,6 +13,9 @@ from statsmodels.tsa.stattools import coint
 from typing import List, Tuple
 import plotly.express as px
 
+import plotly.graph_objects as go
+import pandas as pd
+
 import xloil as xlo
 from xloil.pandas import PDFrame
 
@@ -105,13 +108,18 @@ def iv_surface(input_data:List, r:float, valuation_date:dt.datetime,S0:str, T:st
         try:
             result = root_scalar(
                 implied_volatility_objective,
-                args=(S0, K[i], T[i], r, call_price[i]),
-                bracket=[0.001, 5],  # Search range for volatility
+                args=(S0[i], K[i], T[i], r, call_price[i]),
+                bracket=[-100, 100],  # Search range for volatility
                 method='brentq'
             )
-            implied_vol[i] = result.root
-        except:
-            implied_vol[i] = 0  # Set to 0 if root finding fails
+            if result.converged:
+                implied_vol[i] = result.root
+            else:
+                print(f"Warning: Root finding did not converge for option {i}.")
+                implied_vol[i] = np.nan  # Set to NaN if not converged
+        except Exception as e:
+            print(f"Error: {e} for option {i}.")
+            implied_vol[i] = np.nan  # Set to NaN if an error occurs
     
     # Clean missing values
     M = K / S0  # Moneyness
@@ -161,15 +169,27 @@ def iv_surface(input_data:List, r:float, valuation_date:dt.datetime,S0:str, T:st
     grid_IV = griddata((T_2, M_2), IV_2, (grid_T, grid_M), method='cubic')
     
     # Plot the volatility surface
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot_surface(grid_T, grid_M, grid_IV, cmap='viridis', edgecolor='red')
-    ax.set_title('Implied Volatility Surface', fontsize=14)
-    ax.set_xlabel('Time to Maturity $T$', fontsize=12)
-    ax.set_ylabel('Moneyness $M=K/S$', fontsize=12)
-    ax.set_zlabel('Implied Volatility $\sigma(T,M)$', fontsize=12)
-    plt.show()
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111, projection='3d')
+    # ax.plot_surface(grid_T, grid_M, grid_IV, cmap='viridis', edgecolor='red')
+    # ax.set_title('Implied Volatility Surface', fontsize=14)
+    # ax.set_xlabel('Time to Maturity $T$', fontsize=12)
+    # ax.set_ylabel('Moneyness $M=K/S$', fontsize=12)
+    # ax.set_zlabel('Implied Volatility $\sigma(T,M)$', fontsize=12)
+    # plt.show()
     
+    fig = go.Figure(data=[go.Surface(x=grid_T, y=grid_M, z=grid_IV)])
+    fig.update_layout(
+        title=dict(text='期权波动率曲面'),
+        autosize=True,
+        scene=dict(
+            xaxis_title='Time to Maturity $T$',
+            yaxis_title='Moneyness $M=K/S$',
+            zaxis_title='Implied Volatility $\sigma(T,M)$'
+        ),
+    )
+    fig.show()
+
     # Return surface data
     surface = {
         'T': grid_T,
@@ -183,9 +203,6 @@ def iv_surface(input_data:List, r:float, valuation_date:dt.datetime,S0:str, T:st
 
 @xlo.func
 def iv(arr: List, is_plot=False):
-    import plotly.graph_objects as go
-    import pandas as pd
-
     df = pd.DataFrame(arr[1:], columns=arr[0])
 
     col_expiry = df.columns[0]  # 到期日
