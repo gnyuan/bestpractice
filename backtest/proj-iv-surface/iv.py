@@ -160,6 +160,7 @@ def iv_surface(
     hT = np.median(np.abs(T - np.median(T)))
     hM = np.median(np.abs(M - np.median(M)))
     N = max(max(len(np.unique(T)), len(np.unique(M))), 50)
+    N = 20 
 
     # Smooth with Gaussian kernel
     def gaussian_kernel(z):
@@ -168,12 +169,20 @@ def iv_surface(
     surface_M = np.linspace(np.min(M), np.max(M), N)
     surface_IV = np.zeros((N, len(unique_T)))
 
+    from scipy.interpolate import CubicSpline
+    def cubic_spline_interpolation(x, y, x0):
+        # 创建立方样条插值对象
+        spline = CubicSpline(x, y)
+        # 计算并返回插值结果
+        return spline(x0)
+
     for i in range(N):
         for j in range(len(unique_T)):
             z = gaussian_kernel((unique_T[j] - T_grouped[j]) / hT) * gaussian_kernel(
                 (surface_M[i] - M_grouped[j]) / hM
             )
             surface_IV[i, j] = np.sum(z * IV_grouped[j]) / np.sum(z)
+            # surface_IV[i, j] = cubic_spline_interpolation(M_grouped[j], IV_grouped[j], surface_M[i])
 
     # Prepare data for 3D plot
     T_2 = np.repeat(unique_T, N)
