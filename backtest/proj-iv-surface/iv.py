@@ -80,6 +80,7 @@ def implied_volatility_objective(sigma, S0, K, T, r, call_price):
         "T": "到期时间",
         "K": "执行价格",
         "p": "欧式看涨期权价格",
+        "vol": "成绩量颜色映射值",
         "is_plot": "是否绘制图形",
     },
 )
@@ -91,6 +92,7 @@ def iv_surface(
     T: str,
     K: str,
     p: str,
+    vol: str,
     is_plot: bool = False,
 ):
     """
@@ -107,12 +109,15 @@ def iv_surface(
         dict: A dictionary containing the implied volatility surface and related data.
     """
     df = pd.DataFrame(input_data[1:], columns=input_data[0])
+    df.dropna(inplace=True)
+
     # T需要转换为年化
     df["tenor"] = (pd.to_datetime(df[T]) - valuation_date).dt.days / 365
     S0 = np.array(df[S0].values)
     T = np.array(df["tenor"].values)
     K = np.array(df[K].values)
     call_price = np.array(df[p].values)
+    vol = np.array(df[vol].values)
 
     num = len(call_price)
     implied_vol = np.full(num, np.nan)
@@ -146,67 +151,18 @@ def iv_surface(
     M = M[~missing]
     IV = IV[~missing]
 
-    # Group by unique T
-    unique_T = np.unique(T)
-    T_grouped = []
-    M_grouped = []
-    IV_grouped = []
-    for t in unique_T:
-        T_grouped.append(T[T == t])
-        M_grouped.append(M[T == t])
-        IV_grouped.append(IV[T == t])
-
-    # Choose bandwidth and grid size
-    hT = np.median(np.abs(T - np.median(T)))
-    hM = np.median(np.abs(M - np.median(M)))
-    N = max(max(len(np.unique(T)), len(np.unique(M))), 50)
-    N = 20 
-
-    # Smooth with Gaussian kernel
-    def gaussian_kernel(z):
-        return np.exp(-(z**2) / 2) / np.sqrt(2 * np.pi)
-
-    surface_M = np.linspace(np.min(M), np.max(M), N)
-    surface_IV = np.zeros((N, len(unique_T)))
-
-    from scipy.interpolate import CubicSpline
-    def cubic_spline_interpolation(x, y, x0):
-        # 创建立方样条插值对象
-        spline = CubicSpline(x, y)
-        # 计算并返回插值结果
-        return spline(x0)
-
-    for i in range(N):
-        for j in range(len(unique_T)):
-            z = gaussian_kernel((unique_T[j] - T_grouped[j]) / hT) * gaussian_kernel(
-                (surface_M[i] - M_grouped[j]) / hM
-            )
-            surface_IV[i, j] = np.sum(z * IV_grouped[j]) / np.sum(z)
-            # surface_IV[i, j] = cubic_spline_interpolation(M_grouped[j], IV_grouped[j], surface_M[i])
-
-    # Prepare data for 3D plot
-    T_2 = np.repeat(unique_T, N)
-    M_2 = np.tile(surface_M, len(unique_T))
-    IV_2 = surface_IV.flatten()
-
-    # Interpolate for smooth surface
-    grid_T, grid_M = np.meshgrid(
-        np.linspace(np.min(T_2), np.max(T_2), N),
-        np.linspace(np.min(M_2), np.max(M_2), N),
+    # 已知的散点数据
+    # 创建一个规则的网格，用于插值
+    grid_x, grid_y = np.meshgrid(
+        np.linspace(min(T), max(T), 100), np.linspace(min(M), max(M), 100)
     )
-    grid_IV = griddata((T_2, M_2), IV_2, (grid_T, grid_M), method="cubic")
 
-    # Plot the volatility surface
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111, projection='3d')
-    # ax.plot_surface(grid_T, grid_M, grid_IV, cmap='viridis', edgecolor='red')
-    # ax.set_title('Implied Volatility Surface', fontsize=14)
-    # ax.set_xlabel('Time to Maturity $T$', fontsize=12)
-    # ax.set_ylabel('Moneyness $M=K/S$', fontsize=12)
-    # ax.set_zlabel('Implied Volatility $\sigma(T,M)$', fontsize=12)
-    # plt.show()
+    # 对网格进行插值，使用griddata
+    grid_z = griddata((T, M), IV, (grid_x, grid_y), method="cubic")  # 这里使用cubic插值
 
-    fig = go.Figure(data=[go.Surface(x=grid_T, y=grid_M, z=grid_IV)])
+    # 创建Surface图
+    fig = go.Figure(data=[go.Surface(z=grid_z, x=grid_x, y=grid_y)])
+
     fig.update_layout(
         title=dict(text="期权波动率曲面"),
         autosize=True,
@@ -216,10 +172,27 @@ def iv_surface(
             zaxis_title="Implied Volatility $\sigma(T,M)$",
         ),
     )
+    # 添加3D散点图
+    fig.add_trace(
+        go.Scatter3d(
+            x=T,
+            y=M,
+            z=IV,
+            mode="markers",
+            marker=dict(
+                color=vol,  # 根据vol的值决定颜色
+                size=10,  # 散点的大小
+                colorscale="Viridis",  # 颜色映射方式
+                colorbar=dict(
+                    title="Volume",  # 显示颜色条并命名为Volume
+                    x=1.05,  # 将颜色条放在图表的右侧
+                    tickvals=[10, 20, 30, 40],  # 显示颜色条上的具体数值
+                ),
+            ),
+        )
+    )
     fig.show()
 
-    # Return surface data
-    surface = {"T": grid_T, "M": grid_M, "IV": grid_IV, "hT": hT, "hM": hM}
     if is_plot:
         fig.write_html(f"D:\\iv_surface.html")
     return "隐含波动率图"
@@ -227,18 +200,20 @@ def iv_surface(
 
 @xlo.func(
     args={
+        "r": "无风险利率",
+        "valuation_date": "交易日期",
         "S0": "标的资产当前价格",
         "T": "到期时间",
         "K": "执行价格",
-        "r": "无风险利率",
         "call_price": "期权价格",
     },
 )
-def iv(S0, K, T, r, call_price):
+def iv(r, valuation_date: dt.datetime, S0, T, K, call_price):
+    tenor = (pd.to_datetime(T) - valuation_date).days / 365.0
     try:
         result = root_scalar(
             implied_volatility_objective,
-            args=(S0, K, T, r, call_price),
+            args=(S0, K, tenor, r, call_price),
             bracket=[-1, 10],  # Search range for volatility
             method="brentq",
         )
