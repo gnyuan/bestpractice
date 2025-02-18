@@ -193,6 +193,26 @@ def iv_surface(
     )
     fig.show()
 
+    ### Matplotlib 创建 3D 图
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111, projection='3d')
+
+    # # 绘制曲面图
+    # surf = ax.plot_surface(grid_x, grid_y, grid_z, cmap='viridis')
+
+    # # 添加 3D 散点图
+    # sc = ax.scatter(T, M, IV, c=vol, cmap='viridis', s=50)
+
+    # # 设置标题和标签
+    # ax.set_title('期权波动率曲面')
+    # ax.set_xlabel('Time to Maturity $T$')
+    # ax.set_ylabel('Moneyness $M=K/S$')
+    # ax.set_zlabel('Implied Volatility $\sigma(T,M)$')
+
+    # # 添加颜色条 (用于scatter的vol)
+    # cbar = fig.colorbar(sc, ax=ax, shrink=0.5, aspect=5)
+    # cbar.set_label('Volume')
+
     if is_plot:
         fig.write_html(f"D:\\iv_surface.html")
     return "隐含波动率图"
