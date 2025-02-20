@@ -87,7 +87,7 @@ def log_function_call(func):
 
 ############################################
 
-
+@log_function_call
 def get_weather(params):
     WEATHER_API_KEY = os.getenv('WEATHER_API_KEY')
     location = params.get("location")
@@ -97,7 +97,7 @@ def get_weather(params):
     ret = json.loads(res.content)
     return str(ret)
 
-
+@log_function_call
 def send_mail(params):
     SENDER_EMAIL_ADDRESS = os.getenv('SENDER_EMAIL_ADDRESS')  # 发送者邮箱
     SENDER_EMAIL_PASSWORD = os.getenv('SENDER_EMAIL_PASSWORD')  # 发送者邮箱的密码
@@ -114,6 +114,16 @@ def send_mail(params):
     body = params.get("body")
     recipients = params.get("recipients", [])
     attachments = params.get("attachments", None)  # 默认为None
+
+    if not recipients:
+        raise ValueError("收件人列表不能为空")
+        
+    content_type = params.get("content_type", "plain")  # 支持HTML内容
+    message.attach(MIMEText(body, content_type))
+    
+    # 添加安全校验
+    if any(not re.match(r"[^@]+@[^@]+\.[^@]+", email) for email in recipients):
+        raise ValueError("邮箱格式不正确")
 
     # 创建MIME多部分邮件对象
     message = MIMEMultipart()
@@ -156,7 +166,7 @@ def send_mail(params):
         logger.info(f"Error sending email: {e}")
         return f"邮件发送出错，出错信息{e}"
 
-
+@log_function_call
 def getMemoEntries(params):
     from notion_client import Client
     NOTION_API_KEY = os.getenv('NOTION_API_KEY')
@@ -222,6 +232,7 @@ def getMemoEntries(params):
         logger.error(f"Error fetching data: {e}")
         return None
 
+@log_function_call
 def addMemoEntry(params):
     from notion_client import Client
     NOTION_API_KEY = os.getenv('NOTION_API_KEY')
@@ -257,7 +268,7 @@ def addMemoEntry(params):
         logger.error(f"Error adding data: {e}")
         return None
 
-
+@log_function_call
 def updateMemoEntry(params):
     from notion_client import Client
     NOTION_API_KEY = os.getenv('NOTION_API_KEY')
@@ -294,6 +305,7 @@ def updateMemoEntry(params):
         return None
 
 
+@log_function_call
 def deleteMemoEntry(params):
     from notion_client import Client
     NOTION_API_KEY = os.getenv('NOTION_API_KEY')
@@ -309,12 +321,57 @@ def deleteMemoEntry(params):
         return f'fail to delete notion page, id: {page_id}'
 
 
+@log_function_call
+def file_operations(params: dict) -> str:
+    """
+    文件操作工具
+    params: {
+        "action": "read/write/delete",
+        "path": "C:\\Users\\yuangn\\test.txt",
+        "content": "文本内容"  # 写操作时需要
+    }
+    """
+    path = os.path.abspath(params["path"])
+    assert params["action"] in ["read", "write", "delete"], "Invalid action"
+    
+    # 安全限制在用户文档目录
+    if not path.startswith(os.path.expanduser("~")):
+        raise PermissionError("只能访问用户目录下的文件")
+    
+    try:
+        if params["action"] == "read":
+            with open(path, "r", encoding="utf-8") as f:
+                return f.read()
+                
+        elif params["action"] == "write":
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(params["content"])
+            return f"文件已保存：{path}"
+            
+        elif params["action"] == "delete":
+            os.remove(path)
+            return f"文件已删除：{path}"
+            
+    except Exception as e:
+        logger.error(f"文件操作失败：{str(e)}")
+        raise
+
+
 if __name__ == '__main__':
-    a = get_weather({"location":"shenzhen"})
+    # a = get_weather({"location":"shenzhen"})
     
     # a = send_mail({"subject":"主题测试3", "body":"这是内容", "recipients":["961316387@qq.com"]})
 
     # a = getMemoEntries({})
+
+#     a = file_operations(
+# {
+#         "action": "read",
+#         "path": r"C:\Users\yuangn\zzzz.txt",
+#         "content": "文本内容"  # 写操作时需要
+#     }
+#     )
+    
 
     print(a)
 
