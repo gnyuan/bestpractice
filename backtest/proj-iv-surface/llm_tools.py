@@ -357,6 +357,97 @@ def file_operations(params: dict) -> str:
         raise
 
 
+@log_function_call 
+def system_monitor(params: dict) -> dict:
+    """
+    实时系统监控（Windows资源）
+    params: {"metric": "cpu/memory/disk/battery/all"}
+    """
+    import psutil
+    # CPU 信息
+    cpu_info = {
+        "cpu_percent": psutil.cpu_percent(interval=1),  # CPU 使用率
+        "cpu_count_physical": psutil.cpu_count(logical=False),  # 物理核心数
+        "cpu_count_logical": psutil.cpu_count(logical=True),    # 逻辑核心数
+        "cpu_freq": psutil.cpu_freq().current if psutil.cpu_freq() else None,  # 当前 CPU 频率
+        "cpu_times": {  # CPU 时间统计
+            "user": psutil.cpu_times().user,
+            "system": psutil.cpu_times().system,
+            "idle": psutil.cpu_times().idle,
+        }
+    }
+
+    # 内存信息
+    mem = psutil.virtual_memory()
+    memory_info = {
+        "memory_percent": mem.percent,  # 内存使用率
+        "memory_used_gb": round(mem.used / (1024 ** 3), 2),  # 已用内存（GB）
+        "memory_available_gb": round(mem.available / (1024 ** 3), 2),  # 可用内存（GB）
+        "memory_total_gb": round(mem.total / (1024 ** 3), 2),  # 总内存（GB）
+    }
+
+    # 磁盘信息
+    disk = psutil.disk_usage("/")
+    disk_io = psutil.disk_io_counters()
+    disk_info = {
+        "disk_percent": disk.percent,  # 磁盘使用率
+        "disk_used_gb": round(disk.used / (1024 ** 3), 2),  # 已用磁盘空间（GB）
+        "disk_free_gb": round(disk.free / (1024 ** 3), 2),  # 剩余磁盘空间（GB）
+        "disk_total_gb": round(disk.total / (1024 ** 3), 2),  # 总磁盘空间（GB）
+        "disk_read_mb": round(disk_io.read_bytes / (1024 ** 2), 2) if disk_io else None,  # 磁盘读取数据量（MB）
+        "disk_write_mb": round(disk_io.write_bytes / (1024 ** 2), 2) if disk_io else None,  # 磁盘写入数据量（MB）
+    }
+
+    # 电池信息
+    battery = psutil.sensors_battery()
+    battery_info = {
+        "battery_percent": battery.percent if battery else None,  # 电池电量百分比
+        "battery_plugged": battery.power_plugged if battery else None,  # 是否接通电源
+        "battery_time_left": battery.secsleft if battery else None,  # 剩余时间（秒）
+    }
+
+    # 网络信息
+    net_io = psutil.net_io_counters()
+    network_info = {
+        "network_sent_mb": round(net_io.bytes_sent / (1024 ** 2), 2),  # 发送数据量（MB）
+        "network_recv_mb": round(net_io.bytes_recv / (1024 ** 2), 2),  # 接收数据量（MB）
+    }
+
+    # 系统信息
+    system_info = {
+        "boot_time": dt.datetime.fromtimestamp(psutil.boot_time()).strftime("%Y-%m-%d %H:%M:%S"),  # 系统启动时间
+        "process_count": len(psutil.pids()),  # 当前进程数量
+        "users": [user.name for user in psutil.users()],  # 当前登录用户
+    }
+
+    # 传感器信息（温度、风扇等）
+    sensors_info = {
+        "temperatures": psutil.sensors_temperatures() if hasattr(psutil, "sensors_temperatures") else None,
+        "fans": psutil.sensors_fans() if hasattr(psutil, "sensors_fans") else None,
+    }
+
+    # 组合所有信息
+    metrics = {
+        "cpu": cpu_info,
+        "memory": memory_info,
+        "disk": disk_info,
+        "battery": battery_info,
+        "network": network_info,
+        "system": system_info,
+        "sensors": sensors_info,
+    }
+
+    return metrics
+
+# text to speech
+# web search
+# calendar management
+# translation
+# text to image
+# post to social media, e.g. twitter, wechat, xiaohongshu, etc.
+
+
+
 if __name__ == '__main__':
     # a = get_weather({"location":"shenzhen"})
     
@@ -371,6 +462,7 @@ if __name__ == '__main__':
 #         "content": "文本内容"  # 写操作时需要
 #     }
 #     )
+    a = system_monitor({"metric": "all"})
     
 
     print(a)
