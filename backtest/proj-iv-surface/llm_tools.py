@@ -577,6 +577,6 @@ if __name__ == '__main__':
 # #     )
 #     # a = system_monitor({"metric": "all"})
 
-    a = send_mail({"subject":"主题测试11", "body":"这是内容11啊", "recipients":["961316387@qq.com", "yuangn@ccfund.com.cn"]
+    a = send_mail({"subject":"主题测试11", "body":"这是内容11啊", "recipients":["961316387@qq.com"]
                   , "calendar": {"dtstart": "2025-02-28 16:30:00", "description": "测试项目冲刺会", "location": "线上腾讯会议"}})
     print(a)
