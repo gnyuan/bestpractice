@@ -4,53 +4,9 @@ from typing import List, Tuple
 import requests, json
 import pytz
 
-import win32api
-import win32con
-
-import numpy as np
-import pandas as pd
-import scipy.stats as stats
-import statsmodels.regression.linear_model as sm_ols
-from statsmodels.tools.tools import add_constant
-from statsmodels.tsa.stattools import coint
-
-import plotly.express as px
-
-import plotly.graph_objects as go
-import pandas as pd
-
-import xloil as xlo
-from xloil.pandas import PDFrame
-
-
-import sqlite3
-
-SQLITE_FILE_PATH = r"D:\onedrive\文档\etc\ifind.db"
-
-from dotenv import load_dotenv
-
-load_dotenv()
-
-
-def print_status(*args):
-    with xlo.StatusBar(2000) as status:
-        status.msg(",".join([str(a) for a in args]))
-
-
-def _is_fetching(data):
-    for item in data:
-        if item == None or item == "" or item == "抓取中...":
-            return True
-    return False
-
-
-def MsgBox(content: str = "", title: str = "知心提示") -> int:
-    response = win32api.MessageBox(0, content, title, 4, win32con.MB_SYSTEMMODAL)
-    return response
-
-
 ################################################
-
+from dotenv import load_dotenv
+load_dotenv()
 import logging
 from functools import wraps
 
@@ -65,8 +21,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # 装饰器定义
-
-
 def log_function_call(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -226,7 +180,7 @@ def _generate_meeting_ics(
     event.add("last-modified", now_utc)
     event.add("description", description)
     event.add("location", location)
-    event.add("summary", summary)
+    event.add("summary", summary)  # 会出现在日历中的标题
     event.add("priority", 5)
     event.add("status", "CONFIRMED")
     event.add("class", "PUBLIC")
@@ -553,9 +507,46 @@ def system_monitor(params: dict) -> dict:
 
     return metrics
 
+
+@log_function_call
+def search(params: dict) -> dict:
+    from bs4 import BeautifulSoup
+    query = params.get("query", "")
+    """Bing网页版搜索（无需API密钥）"""
+    url = "https://cn.bing.com/search"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+        "Accept-Language": "zh-CN,zh;q=0.9"
+    }
+    
+    try:
+        # 发起搜索请求
+        response = requests.get(url, params={"q": query}, headers=headers)
+        response.raise_for_status()
+        
+        # 解析搜索结果
+        soup = BeautifulSoup(response.text, 'html.parser')
+        results = []
+        
+        for item in soup.select('li.b_algo'):
+            title = item.find('h2').get_text(strip=True, separator=' ') if item.find('h2') else '无标题'
+            link = item.find('a')['href'] if item.find('a') else '#'
+            desc = item.find('p').get_text(strip=True, separator=' ') if item.find('p') else '无摘要'
+            
+            results.append({
+                "title": title[:80] + "..." if len(title) > 80 else title,
+                "link": link,
+                "description": desc[:200] + "..." if len(desc) > 200 else desc
+            })
+            
+        return results[:10]  # 返回前10条结果
+    
+    except Exception as e:
+        return [{"error": f"搜索失败: {str(e)}"}]
+
+
+
 # text to speech
-# web search
-# calendar management
 # translation
 # text to image
 # post to social media, e.g. twitter, wechat, xiaohongshu, etc.
@@ -577,6 +568,8 @@ if __name__ == '__main__':
 # #     )
 #     # a = system_monitor({"metric": "all"})
 
-    a = send_mail({"subject":"主题测试11", "body":"这是内容11啊", "recipients":["961316387@qq.com"]
-                  , "calendar": {"dtstart": "2025-02-28 16:30:00", "description": "测试项目冲刺会", "location": "线上腾讯会议"}})
+    # a = send_mail({"subject":"主题测试11", "body":"这是内容11啊", "recipients":["961316387@qq.com"]
+    #               , "calendar": {"dtstart": "2025-02-28 16:30:00", "location": "线上腾讯会议", "summary": "提醒事项", "description": "测试项目冲刺会"}})
+    a = search({"query":"苹果"})
+    a = 1
     print(a)
