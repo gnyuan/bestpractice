@@ -14,4 +14,5 @@ statsmodels==0.14.4
 python-dotenv==1.0.1
 notion-client==2.3.0
 psutil==7.0.0
+icalendar==6.1.1
 
