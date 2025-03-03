@@ -391,21 +391,31 @@ def file_operations(params: dict) -> str:
     path = os.path.abspath(params["path"])
     assert params["action"] in ["read", "write", "delete"], "Invalid action"
 
-    # 安全限制在用户文档目录
-    if not path.startswith(os.path.expanduser("~")):
-        raise PermissionError("只能访问用户目录下的文件")
-
     try:
         if params["action"] == "read":
-            with open(path, "r", encoding="utf-8") as f:
-                return f.read()
-
+            if path.lower().endswith(".pdf"):
+                import PyPDF2
+                reader = PyPDF2.PdfReader(path)
+                # 读取所有页面文本再返回
+                text = ''
+                for page in reader.pages:
+                    text += page.extract_text()
+                return text
+            else:
+                with open(path, "r", encoding="utf-8") as f:
+                    return f.read()
         elif params["action"] == "write":
+            # 安全限制在用户文档目录
+            if not path.startswith(os.path.expanduser("~")):
+                raise PermissionError("只能访问操作目录下的文件")
             with open(path, "w", encoding="utf-8") as f:
                 f.write(params["content"])
             return f"文件已保存：{path}"
 
         elif params["action"] == "delete":
+            # 安全限制在用户文档目录
+            if not path.startswith(os.path.expanduser("~")):
+                raise PermissionError("只能访问操作目录下的文件")
             os.remove(path)
             return f"文件已删除：{path}"
 
@@ -545,6 +555,24 @@ def search(params: dict) -> dict:
         return [{"error": f"搜索失败: {str(e)}"}]
 
 
+@log_function_call
+def post(params: dict) -> dict:
+    '''
+    大语言模型可以post到目标地址 url data 其中data要确保能够在requests中post使用
+    '''
+    url = params.get("url")
+    data = params.get("data")
+    data = json.dumps(data) if isinstance(data, dict) else data
+    headers = params.get("headers", {"Content-Type": "application/json"})
+    try:
+        response = requests.post(url, data=data, headers=headers)
+        try:
+            return response.json()
+        except json.decoder.JSONDecodeError:
+            return {"msg": "call post request success."}
+    except Exception as e:
+        return {"error": f"请求失败: {str(e)}"}
+
 
 # text to speech
 # translation
@@ -567,9 +595,21 @@ if __name__ == '__main__':
 # #     }
 # #     )
 #     # a = system_monitor({"metric": "all"})
+    
+#     data = {
+#     "name": "要不试试看？",
+#     "id": "好玩",
+#     "freq": "日",
+#     "unit": "点",
+#     "src": "就是这么厉害的"
+# }
+#     a = post({"url":"https://hook.us2.make.com/trmcj4r4ettgdp4c476f9vl83atdm520", "data": data, "headers":{'Content-Type': 'application/json'}})
+    
+
 
     # a = send_mail({"subject":"主题测试11", "body":"这是内容11啊", "recipients":["961316387@qq.com"]
     #               , "calendar": {"dtstart": "2025-02-28 16:30:00", "location": "线上腾讯会议", "summary": "提醒事项", "description": "测试项目冲刺会"}})
-    a = search({"query":"苹果"})
+    # a = search({"query":"北京 天气"})
     a = 1
+
     print(a)
