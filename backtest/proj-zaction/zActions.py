@@ -3,10 +3,15 @@ import datetime as dt
 from typing import List, Tuple
 import requests, json
 import pytz
+from openai import OpenAI
+import xloil as xlo
+
+import win32api
+import win32con
 
 ################################################
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(r'D:\\.env')  # 暂时所有环境变量都放在这个文件中
 import logging
 from functools import wraps
 
@@ -43,9 +48,23 @@ def log_function_call(func):
 
     return wrapper
 
+def print_llm_chat(messages):
+    for i, msg in enumerate(messages):
+        if i == 0:
+            continue
+        if isinstance(msg, dict):
+            print(f'{i} [{msg["role"]}] {msg["content"]}')
+        else:
+            print(f'{i} [{msg.role}] {msg.content}')
+
+
+
+def MsgBox(content: str = "", title: str = "知心提示") -> int:
+    response = win32api.MessageBox(
+        0, content, title, 4, win32con.MB_SYSTEMMODAL)
+    return response
 
 ############################################
-
 
 @log_function_call
 def get_weather(params):
@@ -574,42 +593,337 @@ def post(params: dict) -> dict:
         return {"error": f"请求失败: {str(e)}"}
 
 
-# text to speech
-# translation
-# text to image
-# post to social media, e.g. twitter, wechat, xiaohongshu, etc.
+############################################
 
 
-if __name__ == '__main__':
-#     # a = get_weather({"location":"shenzhen"})
+# 创建函数映射表
+function_map = {
+    "get_weather": get_weather,
+    "send_mail": send_mail,
+    "getMemoEntries": getMemoEntries,
+    "addMemoEntry": addMemoEntry,
+    "updateMemoEntry": updateMemoEntry,
+    "deleteMemoEntry": deleteMemoEntry,
+}
 
-    # a = send_mail({"subject":"主题测试4", "body":"这是内容", "recipients":["961316387@qq.com", "542820609@qq.com"]})
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get the weather for a location. The user should provide a location first. It's recommended to use Celsius (°C) as the temperature unit.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "The city and state, e.g. shenzhen. Must in English",
+                    }
+                },
+                "required": ["location"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "send_mail",
+            "description": "Send an email with a title, body, recipient list, and optional attachments. content是支持html的，所以请根据内容格式化它。content不支持markdown格式！",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "subject": {
+                        "type": "string",
+                        "description": "The subject of the email.",
+                    },
+                    "body": {
+                        "type": "string",
+                        "description": "The body/content of the email.",
+                    },
+                    "recipients": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of email addresses of the recipients.",
+                    },
+                    "attachments": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of file paths or file references for the email attachments (optional).",
+                    },
+                },
+                "required": ["subject", "body", "recipients"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "getMemoEntries",
+            "description": "Fetch entries from the memo database with a filter, returns a list of key-value pairs with entry IDs.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "id of this entry. For example, '16392460-9e9f-81c6-b3ea-d40f1aadcb87', for update, delete or query"
+                    },
+                    "Description": {
+                        "type": "string",
+                        "description": "Filter by the description field. For example, 'Meeting', 'Test', etc."
+                    },
+                    "priority": {
+                        "type": "string",
+                        "enum": ["高", "中", "低"],
+                        "description": "Filter by priority. Possible values: '高', '中', '低'."
+                    },
+                    "Due Date": {
+                        "type": "string",
+                        "description": "Filter by Due Date. The value should be a date in ISO format, e.g., '2024-12-31'."
+                    },
+                    "Name": {
+                        "type": "string",
+                        "description": "Filter by the Name of the entry."
+                    }
+                },
+                "examples": [
+                    {
+                        "Description": "Meeting",
+                        "priority": "高"
+                    },
+                    {
+                        "Due Date": "2024-12-21"
+                    },
+                    {
+                        "priority": "低",
+                        "Name": "Task"
+                    },
+                    {
+                        "id": "16392460-9e9f-80a0-aa6b-edd95dd5f8e0"
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "addMemoEntry",
+            "description": "Add a new memo entry to the database.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "Description": {
+                        "type": "string",
+                        "description": "Description of the memo entry."
+                    },
+                    "priority": {
+                        "type": "string",
+                        "enum": ["高", "中", "低"],
+                        "description": "Priority of the memo entry. Possible values: '高', '中', '低'."
+                    },
+                    "Due Date": {
+                        "type": "string",
+                        "description": "Due date of the memo entry in ISO format, e.g., '2024-12-31'."
+                    },
+                    "Name": {
+                        "type": "string",
+                        "description": "Name associated with the memo entry."
+                    }
+                },
+                "examples": [
+                    {
+                        "Description": "Meeting",
+                        "priority": "高",
+                        "Due Date": "2024-12-31",
+                        "Name": "Team Sync"
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "updateMemoEntry",
+            "description": "Update an existing memo entry in the database. you MUST call function getMemoEntries first to get the id",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "ID of the memo entry to update. you MUST call function getMemoEntries first to get the id"
+                    },
+                    "Description": {
+                        "type": "string",
+                        "description": "Description of the memo entry."
+                    },
+                    "priority": {
+                        "type": "string",
+                        "enum": ["高", "中", "低"],
+                        "description": "Priority of the memo entry. Possible values: '高', '中', '低'."
+                    },
+                    "Due Date": {
+                        "type": "string",
+                        "description": "Due date of the memo entry in ISO format, e.g., '2024-12-31'."
+                    },
+                    "Name": {
+                        "type": "string",
+                        "description": "Name associated with the memo entry."
+                    }
+                },
+                "examples": [
+                    {
+                        "id": "16392460-9e9f-8098-8cbe-c827b0c7f6c6",
+                        "Description": "Updated Meeting",
+                        "priority": "中",
+                        "Due Date": "2024-12-31",
+                        "Name": "Project Sync"
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "deleteMemoEntry",
+            "description": "Delete a memo entry from the database. you MUST call function getMemoEntries first to get the id",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "ID of the memo entry to delete. you MUST call function getMemoEntries first to get the id"
+                    }
+                },
+                "examples": [
+                    {
+                        "id": "16392460-9e9f-8098-8cbe-c827b0c7f6c6"
+                    }
+                ]
+            }
+        }
+    },
 
-#     # a = getMemoEntries({})
+]
 
-# #     a = file_operations(
-# # {
-# #         "action": "read",
-# #         "path": r"C:\Users\yuangn\zzzz.txt",
-# #         "content": "文本内容"  # 写操作时需要
-# #     }
-# #     )
-#     # a = system_monitor({"metric": "all"})
-    
-#     data = {
-#     "name": "要不试试看？",
-#     "id": "好玩",
-#     "freq": "日",
-#     "unit": "点",
-#     "src": "就是这么厉害的"
-# }
-#     a = post({"url":"https://hook.us2.make.com/trmcj4r4ettgdp4c476f9vl83atdm520", "data": data, "headers":{'Content-Type': 'application/json'}})
-    
+MODEL = os.getenv("MODEL")
+AIAPIKEY = os.getenv("AIAPIKEY")
+AIAPIURL = os.getenv("AIAPIURL")
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 
 
-    # a = send_mail({"subject":"主题测试11", "body":"这是内容11啊", "recipients":["961316387@qq.com"]
-    #               , "calendar": {"dtstart": "2025-02-28 16:30:00", "location": "线上腾讯会议", "summary": "提醒事项", "description": "测试项目冲刺会"}})
-    # a = search({"query":"北京 天气"})
-    a = 1
+def send_messages(messages):
+    response = client.chat.completions.create(
+        model=MODEL, messages=messages, temperature=0.5, tools=tools
+    )
+    messages.append(response.choices[0].message)
+    return messages
 
-    print(a)
+
+client = OpenAI(
+    api_key=AIAPIKEY,
+    base_url=AIAPIURL,
+)
+
+
+def process_tool_calls(messages):
+    if len(messages) == 0 or messages[-1].tool_calls is None:
+        return messages
+    tool_calls = messages[-1].tool_calls
+    for tool in tool_calls:
+        # 解析工具调用的参数
+        tool_function_arguments = re.sub(
+            r'\\(?!["\\/bfnrt])', '', tool.function.arguments)
+        tool_function_arguments = tool_function_arguments.replace('\\', '\\\\')
+        logger.debug(f'tool={str(tool)} {str(tool.function.name)} {
+                     str(tool_function_arguments)}')
+        params = json.loads(tool_function_arguments)  # 将 arguments 转换为字典
+
+        # 根据工具名称查找对应的函数
+        function_name = tool.function.name
+        if function_name in function_map:
+            # 动态调用对应的函数
+            result = function_map[function_name](params)
+        else:
+            result = "Unknown function"
+
+        # 将工具响应作为新的消息添加到 messages 中
+        # 'role: tool' 用来返回工具的结果
+        messages.append(
+            {
+                "role": "tool",
+                "tool_call_id": tool.id,
+                "content": result,  # 直接将结果返回，无需 JSON
+            }
+        )
+    return messages
+
+
+@xlo.func
+def aa():
+    WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+    MsgBox(str(WEATHER_API_KEY))
+    return 'aaa'
+
+@xlo.func
+async def zActions(prompt, a1=None):
+    if a1 is not None:
+        if "{}" in prompt:
+            prompt = prompt.replace("{}", f"`{a1}`")
+        else:
+            prompt += a1
+    # 初始消息
+    system_prompt = '''
+# 角色
+你是一个智能助手，擅长帮助用户管理和整理信息。对于更新或者删除操作，你一定要先调用接口给取得所需的所有数据，再根据取得的id进行更新或者删除！！
+
+## 技能
+### 技能 1: 管理联系人
+- 你可以帮助用户添加、删除和更新联系人信息。
+- 当用户需要查找某个联系人时，你可以快速提供相关信息。
+
+### 技能 2: 管理备忘录
+- 你能够帮助用户根据优先级事项名称/截止日期等查询全部备忘录，即调用getMemoEntries
+- 你能够帮助用户增加一行备忘事项，即addMemoEntry
+- 你能够帮助用户更新一行备忘事项，即先用getMemoEntries查到所有备忘，根据用户的要求找到具体那个，如果找到则使用updateMemoEntry更新，找不到则告诉用户没找到
+- 你能够帮助用户删除一行备忘事项，即先用getMemoEntries查到所有备忘，根据用户的要求找到具体那个，如果找到则使用deleteMemoEntry删除，找不到则告诉用户没找到
+
+### 技能 3: 信息管理与整合
+- 你会将用户的联系人和备忘录等信息保存在Notion中，确保信息安全和易于访问。
+- 你能帮助用户整合不同信息来源，使信息更有条理。
+
+### 技能 4: 发送邮件
+- 你可以根据用户的指示撰写并发送邮件。
+- 你会确保邮件内容准确无误，并在发送前进行确认。
+
+## 限制
+- 仅限于管理联系人、备忘录和发送邮件的相关任务。
+- 不涉及其他不相关的任务或话题。
+
+## 特别重要事项
+- 凡是要求删除的，必须先调用取数函数，才能得到id，根据id删除。若查询出来多个的要一个个删除。
+- 凡是要求更新数据的，必须先调用取数函数，才能得到id，根据id更新数据.若查询出来多个的要一个个更新。
+- 我的邮箱地址是961316387@qq.com，当说`发邮件给我`，`我的邮箱`就指这个。
+'''
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"{prompt}"},
+    ]
+
+    # 发送消息并获取响应（此时模型会返回 tool_calls）
+    yield "正在处理"
+    print_llm_chat(messages)
+    messages = send_messages(messages)
+    print_llm_chat(messages)
+    yield "正在发送"
+
+    while messages[-1].tool_calls is not None and len(messages[-1].tool_calls) > 0:
+        messages = process_tool_calls(messages)
+        messages = send_messages(messages)
+
+    print_llm_chat(messages)
+
+    print(f"Model>\t {messages[-1].content}")
+    yield f'{messages[-1].content}'
+
