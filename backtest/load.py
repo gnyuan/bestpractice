@@ -783,7 +783,7 @@ def get_data(indicators: List, start_date: str = '20200101'):
         "start_date": "【默认20050101】数据开始时间",
     },
 )
-def iData(arr, start_date="20050101") -> PDFrame(headings=True, index=True):
+def load_Data(arr, start_date="20050101") -> PDFrame(headings=True, index=True):
     df = get_data(arr.flatten().tolist(), start_date)
     return df
 
@@ -815,7 +815,7 @@ def iReturn(arr, start_date="20050101") -> PDFrame(headings=True, index=True):
         "title": "【默认空】标题",
     },
 )
-def iPlot(y_indicators, y2_indicators, start_date="20050101", convert2return=False, title=""):
+def load_Plot(y_indicators, y2_indicators, start_date="20050101", convert2return=False, title=""):
     y_indicators = [_replace_variables_in_expr(
         x) for x in y_indicators.flatten().tolist() if x]
     y2_indicators = [_replace_variables_in_expr(
@@ -868,7 +868,7 @@ def iPlot(y_indicators, y2_indicators, start_date="20050101", convert2return=Fal
         "start_date": "【默认20050101】数据开始时间",
     },
 )
-def iMatrix(indicators: List[str], start_date="20050101") -> PDFrame(headings=True, index=True):
+def load_Matrix(indicators: List[str], start_date="20050101") -> PDFrame(headings=True, index=True):
     df = get_data(indicators, start_date)
 
     correlation_df = df.corr()  # 计算相关性矩阵
@@ -892,7 +892,7 @@ def iMatrix(indicators: List[str], start_date="20050101") -> PDFrame(headings=Tr
         "start_date": "【默认20050101】数据开始时间",
     },
 )
-def iCoint(indicators: List[str], start_date="20050101") -> PDFrame(headings=True, index=True):
+def load_Coint(indicators: List[str], start_date="20050101") -> PDFrame(headings=True, index=True):
     # 获取多个指标的数据
     df = get_data(indicators, start_date)
 
@@ -941,7 +941,7 @@ def iCoint(indicators: List[str], start_date="20050101") -> PDFrame(headings=Tru
         "start_date": "【默认20050101】数据开始时间",
     },
 )
-def iAlphaBeta(assets: str, benchmark: str, start_date: str = "20050101") -> Tuple[PDFrame, any]:
+def load_AlphaBeta(assets: str, benchmark: str, start_date: str = "20050101") -> Tuple[PDFrame, any]:
     assets = assets.replace(':', '_')
     benchmark = benchmark.replace(':', '_')
     # 获取资产和基准的数据
