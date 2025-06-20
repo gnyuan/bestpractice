@@ -274,7 +274,7 @@ def save_increment():
     全量抓取：也就是根据指标一个个从头开始抓
     '''
     ws = xlo.active_worksheet()
-    data = ws.range(0, 0, 5000, 4).value
+    data = ws.range(0, 0, 50000, 4).value
     i = 0
     while data[i][0] is not None:
         i += 1
