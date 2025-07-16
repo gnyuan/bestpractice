@@ -456,7 +456,7 @@ def save_daily_edb():
     conn = sqlite3.connect(SQLITE_FILE_PATH)
     desc_df = pd.read_sql('select id, indicator_id from edb_desc', conn)
     melted_df = melted_df.merge(desc_df, on='indicator_id', how='left')
-    # 3 删除原有的
+    # 3 删除原有
     date_str = ",".join(list(melted_df["indicator_date"].unique()))
     execute_sql(
         f'''delete from edb_data where indicator_date in ( {date_str} ) ''')
