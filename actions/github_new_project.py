@@ -20,7 +20,7 @@ def get_github_repo_html():
     content = json.loads(response.content)
 
     html_content = '<table  border="1" cellspacing="0"><tr><th>Name</th><th>HTML URL</th><th>Description</th></tr>'
-    for project in content['items']:
+    for project in content.get('items', []):
         html_content += f"<tr><td>{project['name']}</td><td><a href='{project['html_url']}'>{project['html_url']}</a></td><td>{project['description']}</td></tr>"
     html_content += "</table>"
     return html_content
