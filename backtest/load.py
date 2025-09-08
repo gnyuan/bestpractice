@@ -371,7 +371,7 @@ where indicator_name in ( '{indicator_name}' )
         return
     indicator_foreign_id = indicator_df['id'].iloc[0]  # 获得外键中的指标id
 
-    data = ws.range(0, 0, 5000, 1).value
+    data = ws.range(0, 0, 10000, 1).value
     i = 0
     while data[i][0] is not None:
         i += 1
