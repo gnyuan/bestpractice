@@ -6,7 +6,7 @@ import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 import sqlalchemy as sa
-import sqlite3
+import sqlite3 
 
 
 # 本地文件数据库配置
